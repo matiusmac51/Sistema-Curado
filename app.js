@@ -1,23 +1,19 @@
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 //  AgroSeed — Sistema de Curado de Semillas
-// ═══════════════════════════════════════════
+//  Versión con email como clave de almacenamiento
+// ═══════════════════════════════════════════════════
 
-// ── Constantes de cálculo ──
-const RATES_PER_TON = { polimero: 6.3, apron: 1.0, inoculante: 3.0 };
+const RATES_PER_TON  = { polimero: 6.3,   apron: 1.0,   inoculante: 3.0 };
 const RATES_PER_UNIT = { polimero: 7.875, apron: 1.250, inoculante: 3.750 };
-const KG_PER_UNIT = 1250;
-const CREDENTIALS = { user: 'matius', pass: 'M4tius' };
+const KG_PER_UNIT    = 1250;
 
 // ── Estado ──
-let currentUser = null;
-let records = [];
-let editingId = null;
+let currentUser = null;   // email del operador
+let records     = [];
+let editingId   = null;
 
-// ── Elementos DOM ──
-const views = {
-    login: document.getElementById('login-view'),
-    dashboard: document.getElementById('dashboard-view')
-};
+// ── DOM ──
+const views       = { login: document.getElementById('login-view'), dashboard: document.getElementById('dashboard-view') };
 const loginForm   = document.getElementById('login-form');
 const recordForm  = document.getElementById('record-form');
 const modal       = document.getElementById('record-modal');
@@ -25,28 +21,29 @@ const historyBody = document.getElementById('history-body');
 const emptyState  = document.getElementById('empty-state');
 
 const inp = {
-    username:     document.getElementById('username'),
-    password:     document.getElementById('password'),
-    fecha:        document.getElementById('fecha'),
-    horaInicio:   document.getElementById('hora-inicio'),
-    horaFin:      document.getElementById('hora-fin'),
-    lote:         document.getElementById('lote'),
-    variedad:     document.getElementById('variedad'),
-    unidad:       document.getElementById('unidad'),
-    cantidad:     document.getElementById('cantidad'),
-    bultos:       document.getElementById('bultos'),
-    usePolimero:  document.getElementById('use-polimero'),
-    useApron:     document.getElementById('use-apron'),
-    useInoculante:document.getElementById('use-inoculante'),
-    contenidoBulto: document.getElementById('calc-contenido-bulto'),
+    email:         document.getElementById('email'),
+    password:      document.getElementById('password'),
+    fecha:         document.getElementById('fecha'),
+    horaInicio:    document.getElementById('hora-inicio'),
+    horaFin:       document.getElementById('hora-fin'),
+    lote:          document.getElementById('lote'),
+    variedad:      document.getElementById('variedad'),
+    unidad:        document.getElementById('unidad'),
+    cantidad:      document.getElementById('cantidad'),
+    bultos:        document.getElementById('bultos'),
+    usePolimero:   document.getElementById('use-polimero'),
+    useApron:      document.getElementById('use-apron'),
+    useInoculante: document.getElementById('use-inoculante'),
+    contenidoBulto:document.getElementById('calc-contenido-bulto'),
 };
-
 const out = {
-    polimero:  document.getElementById('calc-polimero'),
-    apron:     document.getElementById('calc-apron'),
-    inoculante:document.getElementById('calc-inoculante'),
-    total:     document.getElementById('calc-total'),
-    userLabel: document.getElementById('current-user-email'),
+    polimero:   document.getElementById('calc-polimero'),
+    apron:      document.getElementById('calc-apron'),
+    inoculante: document.getElementById('calc-inoculante'),
+    total:      document.getElementById('calc-total'),
+    userBadge:  document.getElementById('user-badge'),
+    recordCount:document.getElementById('record-count'),
+    modalTitle: document.getElementById('modal-title'),
 };
 
 // ════════════════════════════════════════════
@@ -54,14 +51,14 @@ const out = {
 // ════════════════════════════════════════════
 function init() {
     try {
-        const saved = sessionStorage.getItem('cUser');
+        const saved = sessionStorage.getItem('ag_user');
         if (saved) signIn(saved, false);
     } catch(e) {}
     bindEvents();
 }
 
 // ════════════════════════════════════════════
-//  NAVEGACIÓN
+//  VISTAS
 // ════════════════════════════════════════════
 function showView(id) {
     Object.values(views).forEach(v => v.classList.remove('active'));
@@ -69,34 +66,32 @@ function showView(id) {
 }
 
 // ════════════════════════════════════════════
-//  AUTH
+//  AUTH — cualquier email válido es una cuenta
 // ════════════════════════════════════════════
-function signIn(user, persist = true) {
-    currentUser = user;
-    out.userLabel.textContent = user;
-    if (persist) try { sessionStorage.setItem('cUser', user); } catch(e) {}
+function signIn(email, persist = true) {
+    currentUser = email.trim().toLowerCase();
+    out.userBadge.textContent = email.trim();
+    if (persist) try { sessionStorage.setItem('ag_user', email.trim()); } catch(e) {}
     loadRecords();
     showView('dashboard');
 }
 
 function signOut() {
-    currentUser = null;
-    records = [];
-    try { sessionStorage.removeItem('cUser'); } catch(e) {}
+    currentUser = null; records = [];
+    try { sessionStorage.removeItem('ag_user'); } catch(e) {}
     loginForm.reset();
+    document.getElementById('login-error').style.display = 'none';
     showView('login');
 }
 
 // ════════════════════════════════════════════
-//  STORAGE
+//  STORAGE (clave = email del operador)
 // ════════════════════════════════════════════
-function storageKey() { return `agseed_${currentUser}`; }
+function storageKey() { return `agseed::${currentUser}`; }
 
 function loadRecords() {
-    try {
-        const raw = localStorage.getItem(storageKey());
-        records = raw ? JSON.parse(raw) : [];
-    } catch(e) { records = []; }
+    try { records = JSON.parse(localStorage.getItem(storageKey())) || []; }
+    catch(e) { records = []; }
     renderTable(records);
 }
 
@@ -109,17 +104,14 @@ function persist() {
 //  CÁLCULO DE DOSIS
 // ════════════════════════════════════════════
 function calcDose() {
-    const unidad  = inp.unidad.value;
-    const qty     = parseFloat(inp.cantidad.value) || 0;
-    const bultos  = parseFloat(inp.bultos.value)   || 1;
-    const useP    = inp.usePolimero.checked;
-    const useA    = inp.useApron.checked;
-    const useI    = inp.useInoculante.checked;
+    const unidad = inp.unidad.value;
+    const qty    = parseFloat(inp.cantidad.value)  || 0;
+    const bultos = parseFloat(inp.bultos.value)    || 1;
+    const useP   = inp.usePolimero.checked;
+    const useA   = inp.useApron.checked;
+    const useI   = inp.useInoculante.checked;
 
-    if (qty <= 0) {
-        resetOutputs();
-        return null;
-    }
+    if (qty <= 0) { resetOutputs(); return null; }
 
     let totalKg, polimero = 0, apron = 0, inoculante = 0;
 
@@ -136,26 +128,22 @@ function calcDose() {
         if (useI) inoculante = ratio * RATES_PER_TON.inoculante;
     }
 
-    const total           = polimero + apron + inoculante;
+    const total            = polimero + apron + inoculante;
     const contenidoPromedio = totalKg / bultos;
 
-    // Actualizar UI
     out.polimero.textContent   = useP ? `${polimero.toFixed(3)} L`   : '— L';
     out.apron.textContent      = useA ? `${apron.toFixed(3)} L`      : '— L';
     out.inoculante.textContent = useI ? `${inoculante.toFixed(3)} L` : '— L';
     out.total.textContent      = `${total.toFixed(3)} L`;
     inp.contenidoBulto.value   = `${contenidoPromedio.toFixed(2)} Kg / Bulto`;
 
-    return { polimero, apron, inoculante, total, contenidoPromedio,
-             usePolimero: useP, useApron: useA, useInoculante: useI };
+    return { polimero, apron, inoculante, total, contenidoPromedio, usePolimero:useP, useApron:useA, useInoculante:useI };
 }
 
 function resetOutputs() {
-    out.polimero.textContent   = '— L';
-    out.apron.textContent      = '— L';
-    out.inoculante.textContent = '— L';
-    out.total.textContent      = '0.000 L';
-    inp.contenidoBulto.value   = '';
+    ['polimero','apron','inoculante'].forEach(k => out[k].textContent = '— L');
+    out.total.textContent    = '0.000 L';
+    inp.contenidoBulto.value = '';
 }
 
 // ════════════════════════════════════════════
@@ -163,24 +151,26 @@ function resetOutputs() {
 // ════════════════════════════════════════════
 function renderTable(data) {
     historyBody.innerHTML = '';
-    if (!data || data.length === 0) {
-        emptyState.style.display = 'block';
-        return;
-    }
+    const count = data ? data.length : 0;
+    out.recordCount.textContent = count === 0
+        ? 'Sin registros cargados'
+        : `${count} registro${count !== 1 ? 's' : ''} — cuenta: ${currentUser}`;
+
+    if (!data || count === 0) { emptyState.style.display = 'block'; return; }
     emptyState.style.display = 'none';
 
     [...data].reverse().forEach(r => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${r.fecha || '—'}</td>
-            <td>${r.horaInicio || '--:--'} – ${r.horaFin || '--:--'}</td>
+            <td>${r.fecha||'—'}</td>
+            <td>${r.horaInicio||'--:--'} – ${r.horaFin||'--:--'}</td>
             <td><strong>${r.lote}</strong></td>
             <td>${r.variedad}</td>
             <td>${r.cantidad} ${r.unidad}</td>
-            <td><strong>${r.bultos || '—'}</strong> | ${r.contenidoPromedio ? r.contenidoPromedio.toFixed(2) : '—'} Kg</td>
-            <td>${r.usePolimero !== false ? r.polimero.toFixed(3)+' L' : '—'}</td>
-            <td>${r.useApron !== false ? r.apron.toFixed(3)+' L' : '—'}</td>
-            <td>${r.useInoculante !== false ? r.inoculante.toFixed(3)+' L' : '—'}</td>
+            <td><strong>${r.bultos||'—'}</strong> | ${r.contenidoPromedio ? r.contenidoPromedio.toFixed(2)+' Kg' : '—'}</td>
+            <td>${r.usePolimero!==false   ? r.polimero.toFixed(3)+' L'   : '—'}</td>
+            <td>${r.useApron!==false      ? r.apron.toFixed(3)+' L'      : '—'}</td>
+            <td>${r.useInoculante!==false ? r.inoculante.toFixed(3)+' L' : '—'}</td>
             <td><strong>${r.total.toFixed(3)} L</strong></td>
             <td class="actions-cell">
                 <button class="btn btn-small btn-edit" onclick="editRecord('${r.id}')">Editar</button>
@@ -191,7 +181,7 @@ function renderTable(data) {
 }
 
 // ════════════════════════════════════════════
-//  ACCIONES GLOBALES (llamadas desde tabla)
+//  ACCIONES GLOBALES
 // ════════════════════════════════════════════
 window.deleteRecord = function(id) {
     if (confirm('¿Eliminar este registro?')) {
@@ -204,20 +194,56 @@ window.editRecord = function(id) {
     const r = records.find(r => r.id === id);
     if (!r) return;
     editingId = id;
-    inp.fecha.value         = r.fecha       || '';
-    inp.horaInicio.value    = r.horaInicio  || '';
-    inp.horaFin.value       = r.horaFin     || '';
-    inp.lote.value          = r.lote;
-    inp.variedad.value      = r.variedad;
-    inp.unidad.value        = r.unidad;
-    inp.cantidad.value      = r.cantidad;
-    inp.bultos.value        = r.bultos      || 1;
-    inp.usePolimero.checked  = r.usePolimero !== false;
-    inp.useApron.checked     = r.useApron    !== false;
+    inp.fecha.value          = r.fecha         || '';
+    inp.horaInicio.value     = r.horaInicio    || '';
+    inp.horaFin.value        = r.horaFin       || '';
+    inp.lote.value           = r.lote;
+    inp.variedad.value       = r.variedad;
+    inp.unidad.value         = r.unidad;
+    inp.cantidad.value       = r.cantidad;
+    inp.bultos.value         = r.bultos        || 1;
+    inp.usePolimero.checked  = r.usePolimero   !== false;
+    inp.useApron.checked     = r.useApron      !== false;
     inp.useInoculante.checked= r.useInoculante !== false;
+    out.modalTitle.textContent = 'Editar Registro';
     calcDose();
     modal.classList.add('active');
 };
+
+// ════════════════════════════════════════════
+//  EXPORTAR CSV
+// ════════════════════════════════════════════
+function exportCSV() {
+    if (!records || records.length === 0) { alert('No hay registros para exportar.'); return; }
+
+    const headers = [
+        'Fecha','Hora Inicio','Hora Fin','N° Lote','Variedad',
+        'Unidad','Cantidad','N° Bultos','Kg / Bulto',
+        'Polímero (L)','Apron/Maxin (L)','Inoculante (L)','Total Mezcla (L)'
+    ];
+
+    const rows = records.map(r => [
+        r.fecha, r.horaInicio, r.horaFin, r.lote, r.variedad,
+        r.unidad, r.cantidad, r.bultos,
+        r.contenidoPromedio ? r.contenidoPromedio.toFixed(2) : '',
+        r.usePolimero   !== false ? r.polimero.toFixed(3)   : '',
+        r.useApron      !== false ? r.apron.toFixed(3)      : '',
+        r.useInoculante !== false ? r.inoculante.toFixed(3) : '',
+        r.total.toFixed(3)
+    ].map(v => `"${v}"`));     // wrap in quotes to handle commas
+
+    const csv  = '\uFEFF' + [headers, ...rows].map(r => r.join(',')).join('\r\n');  // BOM for Excel
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const date = new Date().toISOString().split('T')[0];
+    a.href     = url;
+    a.download = `AgroSeed_Curados_${currentUser}_${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
 // ════════════════════════════════════════════
 //  MODAL
@@ -225,6 +251,7 @@ window.editRecord = function(id) {
 function openModal() {
     editingId = null;
     recordForm.reset();
+    out.modalTitle.textContent = 'Registrar Nuevo Curado';
     const now = new Date();
     inp.fecha.value       = now.toISOString().split('T')[0];
     inp.horaInicio.value  = now.toTimeString().substring(0,5);
@@ -241,29 +268,33 @@ function closeModal() { modal.classList.remove('active'); }
 //  EVENTOS
 // ════════════════════════════════════════════
 function bindEvents() {
-    // Login
+
+    // Login: cualquier email válido entra
     loginForm.addEventListener('submit', e => {
         e.preventDefault();
-        const u = inp.username.value.trim();
-        const p = inp.password.value;
-        if (u.toLowerCase() === CREDENTIALS.user && p === CREDENTIALS.pass) {
-            signIn(u);
+        const email = inp.email.value.trim();
+        const errEl = document.getElementById('login-error');
+        if (email) {
+            errEl.style.display = 'none';
+            signIn(email);
         } else {
-            alert('Usuario o contraseña incorrectos.');
+            errEl.textContent = 'Por favor ingresá un correo electrónico válido.';
+            errEl.style.display = 'block';
         }
     });
 
     document.getElementById('btn-logout').addEventListener('click', signOut);
 
-    // Modal open/close
+    // Export
+    document.getElementById('btn-export').addEventListener('click', exportCSV);
+
+    // Modal
     document.getElementById('btn-new-record').addEventListener('click', openModal);
     document.getElementById('btn-close-modal').addEventListener('click', closeModal);
     document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
 
     // Cálculo reactivo
-    ['input','change'].forEach(ev => {
-        inp.cantidad.addEventListener(ev, calcDose);
-    });
+    ['input','change'].forEach(ev => inp.cantidad.addEventListener(ev, calcDose));
     inp.unidad.addEventListener('change', calcDose);
     inp.bultos.addEventListener('input', calcDose);
     inp.usePolimero.addEventListener('change', calcDose);
@@ -276,30 +307,30 @@ function bindEvents() {
         renderTable(q ? records.filter(r => r.lote.toLowerCase().includes(q)) : records);
     });
 
-    // Guardar / actualizar registro
+    // Guardar registro
     recordForm.addEventListener('submit', e => {
         e.preventDefault();
         const dose = calcDose();
         if (!dose) { alert('Ingresá una cantidad válida.'); return; }
 
         const record = {
-            id:               editingId || Date.now().toString(),
-            fecha:            inp.fecha.value,
-            horaInicio:       inp.horaInicio.value,
-            horaFin:          inp.horaFin.value,
-            lote:             inp.lote.value,
-            variedad:         inp.variedad.value,
-            unidad:           inp.unidad.value,
-            cantidad:         parseFloat(inp.cantidad.value),
-            bultos:           parseFloat(inp.bultos.value),
+            id:              editingId || Date.now().toString(),
+            fecha:           inp.fecha.value,
+            horaInicio:      inp.horaInicio.value,
+            horaFin:         inp.horaFin.value,
+            lote:            inp.lote.value,
+            variedad:        inp.variedad.value,
+            unidad:          inp.unidad.value,
+            cantidad:        parseFloat(inp.cantidad.value),
+            bultos:          parseFloat(inp.bultos.value),
             contenidoPromedio: dose.contenidoPromedio,
-            usePolimero:      dose.usePolimero,
-            useApron:         dose.useApron,
-            useInoculante:    dose.useInoculante,
-            polimero:         dose.polimero,
-            apron:            dose.apron,
-            inoculante:       dose.inoculante,
-            total:            dose.total,
+            usePolimero:     dose.usePolimero,
+            useApron:        dose.useApron,
+            useInoculante:   dose.useInoculante,
+            polimero:        dose.polimero,
+            apron:           dose.apron,
+            inoculante:      dose.inoculante,
+            total:           dose.total,
         };
 
         if (editingId) {
@@ -309,11 +340,9 @@ function bindEvents() {
         } else {
             records.push(record);
         }
-
         persist();
         closeModal();
     });
 }
 
-// ── Arranque ──
 document.addEventListener('DOMContentLoaded', init);
