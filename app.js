@@ -230,38 +230,80 @@ window.editRecord = function(id) {
 };
 
 // ════════════════════════════════════════════
-//  EXPORTAR CSV
+//  EXPORTAR XLSX (Excel)
 // ════════════════════════════════════════════
-function exportCSV() {
+function exportXLSX() {
     if (!records || records.length === 0) { alert('No hay registros para exportar.'); return; }
 
     const headers = [
-        'Fecha','Hora Inicio','Hora Fin','N° Lote','Variedad',
-        'Unidad','Cantidad','N° Bultos','Kg / Bulto',
-        'Polímero (L)','Apron/Maxin (L)','Inoculante (L)','Total Mezcla (L)'
+        'Fecha','Hora Inicio','Hora Fin','N\u00b0 Lote','Variedad',
+        'Unidad','Cantidad','N\u00b0 Bultos','Kg / Bulto',
+        'Pol\u00edmero (L)','Apron/Maxin (L)','Inoculante (L)','Total Mezcla (L)'
     ];
 
-    const rows = records.map(r => [
-        r.fecha, r.horaInicio, r.horaFin, r.lote, r.variedad,
-        r.unidad, r.cantidad, r.bultos,
-        r.contenidoPromedio ? r.contenidoPromedio.toFixed(2) : '',
-        r.usePolimero   !== false ? r.polimero.toFixed(3)   : '',
-        r.useApron      !== false ? r.apron.toFixed(3)      : '',
-        r.useInoculante !== false ? r.inoculante.toFixed(3) : '',
-        r.total.toFixed(3)
-    ].map(v => `"${v}"`));     // wrap in quotes to handle commas
+    const rows = records.map(r => ({
+        'Fecha':           r.fecha            || '',
+        'Hora Inicio':     r.horaInicio       || '',
+        'Hora Fin':        r.horaFin          || '',
+        'N\u00b0 Lote':       r.lote,
+        'Variedad':        r.variedad,
+        'Unidad':          r.unidad,
+        'Cantidad':        r.cantidad,
+        'N\u00b0 Bultos':     r.bultos           || '',
+        'Kg / Bulto':      r.contenidoPromedio ? parseFloat(r.contenidoPromedio.toFixed(2)) : '',
+        'Pol\u00edmero (L)':  r.usePolimero   !== false ? parseFloat(r.polimero.toFixed(3))   : '',
+        'Apron/Maxin (L)': r.useApron      !== false ? parseFloat(r.apron.toFixed(3))      : '',
+        'Inoculante (L)':  r.useInoculante !== false ? parseFloat(r.inoculante.toFixed(3)) : '',
+        'Total Mezcla (L)':parseFloat(r.total.toFixed(3))
+    }));
 
-    const csv  = '\uFEFF' + [headers, ...rows].map(r => r.join(',')).join('\r\n');  // BOM for Excel
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
+    const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+
+    // Column widths
+    ws['!cols'] = [
+        {wch:12},{wch:10},{wch:10},{wch:10},{wch:10},
+        {wch:14},{wch:10},{wch:10},{wch:10},
+        {wch:13},{wch:14},{wch:13},{wch:14}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Curados');
+
     const date = new Date().toISOString().split('T')[0];
-    a.href     = url;
-    a.download = `AgroSeed_Curados_${currentUser}_${date}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    XLSX.writeFile(wb, `Manisur_Curados_${currentUser}_${date}.xlsx`);
+}
+
+// ════════════════════════════════════════════
+//  COMPARTIR POR WHATSAPP
+// ════════════════════════════════════════════
+function shareWhatsApp() {
+    if (!records || records.length === 0) { alert('No hay registros para compartir.'); return; }
+
+    // Build summary of last 5 records
+    const latest = [...records].reverse().slice(0, 5);
+    const date   = new Date().toLocaleDateString('es-AR');
+
+    let msg = `\u2705 *Manisur \u2014 Resumen de Curados*\n`;
+    msg    += `Operador: ${currentUser}\n`;
+    msg    += `Fecha: ${date}\n\n`;
+
+    latest.forEach((r, i) => {
+        msg += `*Registro ${i+1}*\n`;
+        msg += `  \u2022 Lote: ${r.lote} | ${r.variedad}\n`;
+        msg += `  \u2022 Fecha: ${r.fecha} (${r.horaInicio}\u2013${r.horaFin})\n`;
+        msg += `  \u2022 Cantidad: ${r.cantidad} ${r.unidad}\n`;
+        msg += `  \u2022 Bultos: ${r.bultos || '\u2014'} (${r.contenidoPromedio ? r.contenidoPromedio.toFixed(1)+' Kg/Bulto' : '\u2014'})\n`;
+        if (r.usePolimero   !== false) msg += `  \u2022 Pol\u00edmero: ${r.polimero.toFixed(3)} L\n`;
+        if (r.useApron      !== false) msg += `  \u2022 Apron/Maxin: ${r.apron.toFixed(3)} L\n`;
+        if (r.useInoculante !== false) msg += `  \u2022 Inoculante: ${r.inoculante.toFixed(3)} L\n`;
+        msg += `  \u2022 *Total: ${r.total.toFixed(3)} L*\n\n`;
+    });
+
+    if (records.length > 5) msg += `_... y ${records.length - 5} registros m\u00e1s._\n`;
+    msg += `\n_Generado por Manisur Log\u00edstica de Curado_`;
+
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
 }
 
 // ════════════════════════════════════════════
@@ -306,9 +348,8 @@ function bindEvents() {
     });
 
     document.getElementById('btn-logout').addEventListener('click', signOut);
-
-    // Export
-    document.getElementById('btn-export').addEventListener('click', exportCSV);
+    document.getElementById('btn-export-xlsx').addEventListener('click', exportXLSX);
+    document.getElementById('btn-whatsapp').addEventListener('click', shareWhatsApp);
 
     // Modal
     document.getElementById('btn-new-record').addEventListener('click', openModal);
