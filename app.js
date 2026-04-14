@@ -3,10 +3,10 @@
 // ═══════════════════════════════════════════
 
 // ── Constantes de cálculo ──
-const RATES_PER_TON  = { polimero: 6.3, apron: 1.0, inoculante: 3.0 };
+const RATES_PER_TON = { polimero: 6.3, apron: 1.0, inoculante: 3.0 };
 const RATES_PER_UNIT = { polimero: 7.875, apron: 1.250, inoculante: 3.750 };
-const KG_PER_UNIT    = 1250;
-const CREDENTIALS    = { user: 'matius', pass: 'm4tius' }; // lowercase para comparar
+const KG_PER_UNIT = 1250;
+const CREDENTIALS = { user: 'matius', pass: 'M4tius' };
 
 // ── Estado ──
 let currentUser = null;
@@ -244,18 +244,12 @@ function bindEvents() {
     // Login
     loginForm.addEventListener('submit', e => {
         e.preventDefault();
-        const u = inp.username.value.trim().toLowerCase();
-        const p = inp.password.value.trim().toLowerCase();
-        const errEl = document.getElementById('login-error');
-
-        if (u === CREDENTIALS.user && p === CREDENTIALS.pass) {
-            if (errEl) errEl.style.display = 'none';
-            signIn(inp.username.value.trim());
+        const u = inp.username.value.trim();
+        const p = inp.password.value;
+        if (u.toLowerCase() === CREDENTIALS.user && p === CREDENTIALS.pass) {
+            signIn(u);
         } else {
-            if (errEl) {
-                errEl.textContent = 'Usuario o contraseña incorrectos. Verifique e intente nuevamente.';
-                errEl.style.display = 'block';
-            }
+            alert('Usuario o contraseña incorrectos.');
         }
     });
 
