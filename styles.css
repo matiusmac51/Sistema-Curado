@@ -424,16 +424,117 @@ tbody tr:last-child td { border-bottom:none; }
 .dose-total-value { font-size:1.5rem; font-weight:800; letter-spacing:-.02em; color:var(--accent); }
 
 /* ════════════════════════════════
-   RESPONSIVE
+   SAFE AREA (notch / Home Bar)
 ════════════════════════════════ */
-@media (max-width:900px) {
-    .form-grid { grid-template-columns:1fr 1fr; }
-    .header-actions { gap:.4rem; }
-    .btn-large { padding:.6rem .9rem; font-size:.8rem; }
+.app-header {
+    padding-top: max(.65rem, env(safe-area-inset-top));
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
 }
-@media (max-width:600px) {
-    .form-grid { grid-template-columns:1fr; }
-    .app-header { flex-wrap:wrap; }
-    .header-center { order:3; flex:100%; justify-content:flex-start; }
-    .dashboard-header { flex-direction:column; align-items:flex-start; gap:.75rem; }
+.dashboard-content {
+    padding-bottom: max(1.4rem, env(safe-area-inset-bottom));
 }
+
+/* ════════════════════════════════
+   TABLET (≤ 900px)
+════════════════════════════════ */
+@media (max-width: 900px) {
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .header-actions { gap: .4rem; }
+    .btn-large { padding: .6rem .9rem; font-size: .8rem; }
+    .dashboard-content { padding: 1rem; }
+    .table-container { overflow-x: auto; }
+    table { min-width: 700px; }
+}
+
+/* ════════════════════════════════
+   MOBILE (≤ 600px)
+════════════════════════════════ */
+@media (max-width: 600px) {
+    body { font-size: 13px; }
+
+    /* Login */
+    .login-card { padding: 2rem 1.4rem; border-radius: 12px; margin: 1rem; }
+    .login-logo { width: 130px; }
+    
+    /* Header: stack brand and actions */
+    .app-header {
+        flex-wrap: wrap;
+        padding: .6rem 1rem;
+        gap: .5rem;
+    }
+    .brand-header { flex: 1; }
+    .header-center { order: 3; flex: 100%; justify-content: flex-start; padding-top: .2rem; }
+    .header-actions { gap: .35rem; }
+    .btn-accent  { padding: .45rem .7rem; font-size: .75rem; }
+    .btn-large   { padding: .55rem .8rem; font-size: .78rem; }
+    .btn-ghost   { padding: .45rem .6rem; font-size: .75rem; }
+
+    /* Dashboard */
+    .dashboard-header { flex-direction: column; align-items: flex-start; gap: .65rem; }
+    .dashboard-header h1 { font-size: 1.1rem; }
+    .search-box input { max-width: 100%; width: 100%; }
+    .dashboard-content { padding: .8rem; }
+
+    /* Table scrollable */
+    .table-container { border-radius: 6px; }
+    table { min-width: 620px; font-size: .75rem; }
+    th, td { padding: .5rem .6rem; }
+
+    /* Modal */
+    .modal { padding: 0; align-items: flex-end; }
+    .modal-content {
+        border-radius: 14px 14px 0 0;
+        max-height: 95vh;
+        border-left: none; border-right: none; border-bottom: none;
+    }
+    .modal-header { border-radius: 12px 12px 0 0; padding: .85rem 1rem; }
+
+    /* Form: 1 column on mobile */
+    .form-grid { grid-template-columns: 1fr; gap: .5rem; }
+    .input-group[style*="grid-column"] { grid-column: span 1 !important; }
+    .dummy { display: none; }
+
+    /* Product cards: compact */
+    .product-card { padding: .5rem .75rem; }
+    .product-name { font-size: .82rem; }
+    .dose-value-lg { font-size: .9rem; }
+    .dose-rate-input { width: 52px; }
+
+    /* Calculation summary */
+    .calculation-summary { padding: .8rem; }
+    .dose-total-bar { padding: .6rem .85rem; }
+    .dose-total-value { font-size: 1.25rem; }
+}
+
+/* ════════════════════════════════
+   SMALL PHONE (≤ 380px)
+════════════════════════════════ */
+@media (max-width: 380px) {
+    .login-logo { width: 110px; }
+    .brand h1 { font-size: 1.15rem; }
+    .modal-content { max-height: 98vh; }
+}
+
+/* ════════════════════════════════
+   LANDSCAPE PHONE
+════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+    #login-view .login-card { padding: 1.2rem 2rem; }
+    .login-logo { width: 90px; margin-bottom: .5rem; }
+    .brand { margin-bottom: .8rem; }
+    .subtitle { margin-bottom: 1rem; }
+    .modal-content { max-height: 98vh; }
+    .modal { align-items: center; }
+}
+
+/* ════════════════════════════════
+   PRINT / EXPORT
+════════════════════════════════ */
+@media print {
+    .app-header, .dashboard-header .search-box,
+    .header-actions, .actions-cell, #btn-new-record { display: none !important; }
+    table { min-width: unset; font-size: 11px; }
+    .table-container { border: none; box-shadow: none; }
+}
+
