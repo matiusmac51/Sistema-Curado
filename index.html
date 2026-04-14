@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroSeed — Sistema de Curado</title>
+    <meta name="description" content="Sistema de gestión y registro de curado de semillas.">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="app">
+
+    <!-- ═══════════════════════════ LOGIN ═════════════════════════════ -->
+    <main id="login-view" class="view active">
+        <div class="login-card">
+            <div class="brand">
+                <div class="logo"></div>
+                <h1>AgroSeed</h1>
+            </div>
+            <h2>Acceso al Sistema</h2>
+            <p class="subtitle">Control de Curado de Semillas</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username">Usuario / Operador</label>
+                    <input type="text" id="username" required placeholder="Ej: Matius">
+                </div>
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
+                <div id="login-error" style="display:none; margin-top:0.85rem; background:#fde8e8; color:#a93226; border:1.5px solid #e74c3c; border-radius:6px; padding:0.6rem 0.9rem; font-size:0.82rem; font-weight:600; text-align:center;"></div>
+            </form>
+            <div class="login-footer"><p>Para soporte contacte al administrador.</p></div>
+        </div>
+    </main>
+
+    <!-- ══════════════════════════ DASHBOARD ══════════════════════════ -->
+    <main id="dashboard-view" class="view">
+        <header class="app-header">
+            <div class="brand-header">
+                <div class="logo-small"></div>
+                <h2>AgroSeed</h2>
+            </div>
+            <div class="user-info">
+                <span id="current-user-email">—</span>
+                <button id="btn-logout" class="btn btn-text">Cerrar Sesión ×</button>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Panel de Curados</h1>
+                    <p>Gestión y registro de procesos</p>
+                </div>
+                <button id="btn-new-record" class="btn btn-primary btn-large">+ Registrar Nuevo Curado</button>
+            </div>
+
+            <div class="filters-section">
+                <div class="search-box">
+                    <input type="text" id="search-lote" placeholder="Buscar por N° de Lote…">
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>N° Lote</th>
+                            <th>Grano</th>
+                            <th>Cantidad</th>
+                            <th>Bultos / Kg Prom.</th>
+                            <th>Polímero</th>
+                            <th>Apron/Maxin</th>
+                            <th>Inoculante</th>
+                            <th>Total Mezcla</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+                <div id="empty-state" class="empty-state">No hay registros. ¡Registrá el primer curado!</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ══════════════════════════ MODAL ══════════════════════════════ -->
+    <div id="record-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Nuevo Curado</h2>
+                <button id="btn-close-modal" class="btn-icon">×</button>
+            </div>
+
+            <div class="modal-body">
+                <form id="record-form">
+
+                    <!-- Sección Tiempo y Lote -->
+                    <div class="form-grid">
+                        <div class="form-section-title">Datos del Proceso</div>
+
+                        <div class="input-group">
+                            <label for="fecha">Fecha</label>
+                            <input type="date" id="fecha" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="hora-inicio">Hora de Inicio</label>
+                            <input type="time" id="hora-inicio" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="hora-fin">Hora de Fin</label>
+                            <input type="time" id="hora-fin" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="lote">N° de Lote</label>
+                            <input type="text" id="lote" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="variedad">Variedad</label>
+                            <select id="variedad" required>
+                                <option value="Maní" selected>Maní</option>
+                                <option value="Soja">Soja</option>
+                                <option value="Maíz">Maíz</option>
+                                <option value="Trigo">Trigo</option>
+                                <option value="Girasol">Girasol</option>
+                            </select>
+                        </div>
+                        <div class="input-group"> <!-- Spacer --></div>
+
+                        <div class="form-section-title">Cantidad a Curar</div>
+
+                        <div class="input-group">
+                            <label for="unidad">Unidad</label>
+                            <select id="unidad" required>
+                                <option value="Kilos">Kilos</option>
+                                <option value="Unidades">Unidades (1250 kg)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="cantidad">Cantidad</label>
+                            <input type="number" id="cantidad" step="0.01" min="0.01" required placeholder="0">
+                        </div>
+                        <div class="input-group">
+                            <label for="bultos">N° de Bultos Generados</label>
+                            <input type="number" id="bultos" step="1" min="1" required placeholder="1">
+                        </div>
+                        <div class="input-group">
+                            <label>Peso Promedio / Bulto</label>
+                            <input type="text" id="calc-contenido-bulto" readonly
+                                   style="background:#f4f6f0; font-weight:800; color:var(--primary); border-color:var(--accent);">
+                        </div>
+                    </div>
+
+                    <!-- Sección Productos -->
+                    <div class="calculation-summary">
+                        <h3>Productos a Utilizar</h3>
+                        <p class="dose-hint">Activá o desactivá cada producto. La dosis total se recalcula automáticamente.</p>
+
+                        <div class="product-cards">
+
+                            <!-- Polímero -->
+                            <label class="product-card" id="card-polimero">
+                                <div class="product-card-header">
+                                    <div class="product-toggle-wrapper">
+                                        <input type="checkbox" id="use-polimero" checked>
+                                        <span class="product-name">Polímero</span>
+                                    </div>
+                                    <span class="product-rate">6.3 L / ton</span>
+                                </div>
+                                <div class="product-card-result">
+                                    <span class="dose-label-sm">Dosis</span>
+                                    <span class="dose-value-lg" id="calc-polimero">— L</span>
+                                </div>
+                            </label>
+
+                            <!-- Apron / Maxin -->
+                            <label class="product-card" id="card-apron">
+                                <div class="product-card-header">
+                                    <div class="product-toggle-wrapper">
+                                        <input type="checkbox" id="use-apron" checked>
+                                        <span class="product-name">Apron / Maxin</span>
+                                    </div>
+                                    <span class="product-rate">1.0 L / ton</span>
+                                </div>
+                                <div class="product-card-result">
+                                    <span class="dose-label-sm">Dosis</span>
+                                    <span class="dose-value-lg" id="calc-apron">— L</span>
+                                </div>
+                            </label>
+
+                            <!-- Inoculante -->
+                            <label class="product-card" id="card-inoculante">
+                                <div class="product-card-header">
+                                    <div class="product-toggle-wrapper">
+                                        <input type="checkbox" id="use-inoculante" checked>
+                                        <span class="product-name">Inoculante</span>
+                                    </div>
+                                    <span class="product-rate">3.0 L / ton</span>
+                                </div>
+                                <div class="product-card-result">
+                                    <span class="dose-label-sm">Dosis</span>
+                                    <span class="dose-value-lg" id="calc-inoculante">— L</span>
+                                </div>
+                            </label>
+
+                        </div>
+
+                        <div class="dose-total-bar">
+                            <span class="dose-total-label">Mezcla Total</span>
+                            <span class="dose-total-value" id="calc-total">0.000 L</span>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" id="btn-cancel-modal" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Registro</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
