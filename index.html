@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgroSeed — Sistema de Curado</title>
-    <meta name="description" content="Sistema de gestión y registro de curado de semillas.">
+    <title>Manisur — Logística de Curado</title>
+    <meta name="description" content="Sistema de gestión y registro de curado de semillas. Manisur S.A.">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -18,10 +18,11 @@
         <div class="login-card">
 
             <div class="brand">
-                <div class="logo"></div>
+                <img src="https://www.manisur.com.ar/wp-content/uploads/2024/01/manisur-logo-1.png"
+                     alt="Manisur" class="login-logo">
                 <div>
-                    <h1>AgroSeed</h1>
-                    <span class="brand-sub">Control de Curado</span>
+                    <h1>Logística de Curado</h1>
+                    <span class="brand-sub">Control de Proceso — Semillas</span>
                 </div>
             </div>
 
@@ -57,8 +58,12 @@
 
     <header class="app-header">
         <div class="brand-header">
-            <div class="logo-small"></div>
-            <h2>AgroSeed</h2>
+            <img src="https://www.manisur.com.ar/wp-content/uploads/2024/01/manisur-icono.png"
+                 alt="Manisur" class="header-logo-icon">
+            <div class="header-brand-text">
+                <span class="header-brand-name">Manisur</span>
+                <span class="header-brand-sub">Logística de Curado</span>
+            </div>
         </div>
         <div class="header-center">
             <span class="user-badge" id="user-badge">—</span>
@@ -194,7 +199,11 @@
                                 <span class="product-rate">6.3 L / ton</span>
                             </div>
                             <div class="product-card-result">
-                                <span class="dose-label-sm">Dosis</span>
+                                <span class="dose-label-sm">Dosis predeterminada</span>
+                                <div class="dose-edit-row">
+                                    <input type="number" id="rate-polimero" class="dose-rate-input" value="6.3" step="0.1" min="0" title="Litros por tonelada">
+                                    <span class="dose-rate-unit">L/ton</span>
+                                </div>
                                 <span class="dose-value-lg" id="calc-polimero">— L</span>
                             </div>
                         </label>
@@ -208,7 +217,11 @@
                                 <span class="product-rate">1.0 L / ton</span>
                             </div>
                             <div class="product-card-result">
-                                <span class="dose-label-sm">Dosis</span>
+                                <span class="dose-label-sm">Dosis predeterminada</span>
+                                <div class="dose-edit-row">
+                                    <input type="number" id="rate-apron" class="dose-rate-input" value="1.0" step="0.1" min="0" title="Litros por tonelada">
+                                    <span class="dose-rate-unit">L/ton</span>
+                                </div>
                                 <span class="dose-value-lg" id="calc-apron">— L</span>
                             </div>
                         </label>
@@ -222,7 +235,11 @@
                                 <span class="product-rate">3.0 L / ton</span>
                             </div>
                             <div class="product-card-result">
-                                <span class="dose-label-sm">Dosis</span>
+                                <span class="dose-label-sm">Dosis predeterminada</span>
+                                <div class="dose-edit-row">
+                                    <input type="number" id="rate-inoculante" class="dose-rate-input" value="3.0" step="0.1" min="0" title="Litros por tonelada">
+                                    <span class="dose-rate-unit">L/ton</span>
+                                </div>
                                 <span class="dose-value-lg" id="calc-inoculante">— L</span>
                             </div>
                         </label>

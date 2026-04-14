@@ -21,20 +21,23 @@ const historyBody = document.getElementById('history-body');
 const emptyState  = document.getElementById('empty-state');
 
 const inp = {
-    email:         document.getElementById('email'),
-    password:      document.getElementById('password'),
-    fecha:         document.getElementById('fecha'),
-    horaInicio:    document.getElementById('hora-inicio'),
-    horaFin:       document.getElementById('hora-fin'),
-    lote:          document.getElementById('lote'),
-    variedad:      document.getElementById('variedad'),
-    unidad:        document.getElementById('unidad'),
-    cantidad:      document.getElementById('cantidad'),
-    bultos:        document.getElementById('bultos'),
-    usePolimero:   document.getElementById('use-polimero'),
-    useApron:      document.getElementById('use-apron'),
-    useInoculante: document.getElementById('use-inoculante'),
-    contenidoBulto:document.getElementById('calc-contenido-bulto'),
+    email:          document.getElementById('email'),
+    password:       document.getElementById('password'),
+    fecha:          document.getElementById('fecha'),
+    horaInicio:     document.getElementById('hora-inicio'),
+    horaFin:        document.getElementById('hora-fin'),
+    lote:           document.getElementById('lote'),
+    variedad:       document.getElementById('variedad'),
+    unidad:         document.getElementById('unidad'),
+    cantidad:       document.getElementById('cantidad'),
+    bultos:         document.getElementById('bultos'),
+    usePolimero:    document.getElementById('use-polimero'),
+    useApron:       document.getElementById('use-apron'),
+    useInoculante:  document.getElementById('use-inoculante'),
+    ratePolimero:   document.getElementById('rate-polimero'),
+    rateApron:      document.getElementById('rate-apron'),
+    rateInoculante: document.getElementById('rate-inoculante'),
+    contenidoBulto: document.getElementById('calc-contenido-bulto'),
 };
 const out = {
     polimero:   document.getElementById('calc-polimero'),
@@ -111,24 +114,34 @@ function calcDose() {
     const useA   = inp.useApron.checked;
     const useI   = inp.useInoculante.checked;
 
+    // Read custom rates (fall back to defaults)
+    const rateP = parseFloat(inp.ratePolimero.value)   || RATES_PER_TON.polimero;
+    const rateA = parseFloat(inp.rateApron.value)      || RATES_PER_TON.apron;
+    const rateI = parseFloat(inp.rateInoculante.value) || RATES_PER_TON.inoculante;
+
+    // Rates per unit = rate * 1.25 (1250kg / 1000kg)
+    const rateP_u = rateP * 1.25;
+    const rateA_u = rateA * 1.25;
+    const rateI_u = rateI * 1.25;
+
     if (qty <= 0) { resetOutputs(); return null; }
 
     let totalKg, polimero = 0, apron = 0, inoculante = 0;
 
     if (unidad === 'Unidades') {
         totalKg = qty * KG_PER_UNIT;
-        if (useP) polimero   = qty * RATES_PER_UNIT.polimero;
-        if (useA) apron      = qty * RATES_PER_UNIT.apron;
-        if (useI) inoculante = qty * RATES_PER_UNIT.inoculante;
+        if (useP) polimero   = qty * rateP_u;
+        if (useA) apron      = qty * rateA_u;
+        if (useI) inoculante = qty * rateI_u;
     } else {
         totalKg = qty;
         const ratio = qty / 1000;
-        if (useP) polimero   = ratio * RATES_PER_TON.polimero;
-        if (useA) apron      = ratio * RATES_PER_TON.apron;
-        if (useI) inoculante = ratio * RATES_PER_TON.inoculante;
+        if (useP) polimero   = ratio * rateP;
+        if (useA) apron      = ratio * rateA;
+        if (useI) inoculante = ratio * rateI;
     }
 
-    const total            = polimero + apron + inoculante;
+    const total             = polimero + apron + inoculante;
     const contenidoPromedio = totalKg / bultos;
 
     out.polimero.textContent   = useP ? `${polimero.toFixed(3)} L`   : '— L';
@@ -137,7 +150,9 @@ function calcDose() {
     out.total.textContent      = `${total.toFixed(3)} L`;
     inp.contenidoBulto.value   = `${contenidoPromedio.toFixed(2)} Kg / Bulto`;
 
-    return { polimero, apron, inoculante, total, contenidoPromedio, usePolimero:useP, useApron:useA, useInoculante:useI };
+    return { polimero, apron, inoculante, total, contenidoPromedio,
+             usePolimero:useP, useApron:useA, useInoculante:useI,
+             ratePolimero:rateP, rateApron:rateA, rateInoculante:rateI };
 }
 
 function resetOutputs() {
@@ -202,9 +217,13 @@ window.editRecord = function(id) {
     inp.unidad.value         = r.unidad;
     inp.cantidad.value       = r.cantidad;
     inp.bultos.value         = r.bultos        || 1;
-    inp.usePolimero.checked  = r.usePolimero   !== false;
-    inp.useApron.checked     = r.useApron      !== false;
-    inp.useInoculante.checked= r.useInoculante !== false;
+    inp.usePolimero.checked   = r.usePolimero   !== false;
+    inp.useApron.checked      = r.useApron      !== false;
+    inp.useInoculante.checked = r.useInoculante !== false;
+    // Restore custom rates if saved
+    inp.ratePolimero.value   = r.ratePolimero   || RATES_PER_TON.polimero;
+    inp.rateApron.value      = r.rateApron      || RATES_PER_TON.apron;
+    inp.rateInoculante.value = r.rateInoculante || RATES_PER_TON.inoculante;
     out.modalTitle.textContent = 'Editar Registro';
     calcDose();
     modal.classList.add('active');
@@ -258,6 +277,9 @@ function openModal() {
     inp.usePolimero.checked  = true;
     inp.useApron.checked     = true;
     inp.useInoculante.checked= true;
+    inp.ratePolimero.value   = RATES_PER_TON.polimero;
+    inp.rateApron.value      = RATES_PER_TON.apron;
+    inp.rateInoculante.value = RATES_PER_TON.inoculante;
     inp.bultos.value = 1;
     resetOutputs();
     modal.classList.add('active');
@@ -300,6 +322,9 @@ function bindEvents() {
     inp.usePolimero.addEventListener('change', calcDose);
     inp.useApron.addEventListener('change', calcDose);
     inp.useInoculante.addEventListener('change', calcDose);
+    inp.ratePolimero.addEventListener('input', calcDose);
+    inp.rateApron.addEventListener('input', calcDose);
+    inp.rateInoculante.addEventListener('input', calcDose);
 
     // Búsqueda
     document.getElementById('search-lote').addEventListener('input', e => {
