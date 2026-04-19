@@ -95,41 +95,193 @@
     </header>
 
     <div class="dashboard-content">
-        <div class="dashboard-header">
-            <div>
-                <h1>Registro de Curados</h1>
-                <p id="record-count">—</p>
+
+        <!-- PESTAÑA: CURADO -->
+        <div id="tab-curado" class="tab-pane active">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Registro de Curados</h1>
+                    <p id="record-count">—</p>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="search-lote" placeholder="Buscar por N° de Lote…">
+                </div>
             </div>
-            <div class="search-box">
-                <input type="text" id="search-lote" placeholder="Buscar por N° de Lote…">
+
+            <div class="table-container">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>N° Lote</th>
+                            <th>Grano</th>
+                            <th>Cantidad</th>
+                            <th>Bultos / Kg Prom.</th>
+                            <th>Polímero</th>
+                            <th>Apron/Maxin</th>
+                            <th>Inoculante</th>
+                            <th>Total Mezcla</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">🌱</div>
+                    <p>No hay registros cargados.<br>Hacé clic en <strong>+ Nuevo Curado</strong> para comenzar.</p>
+                </div>
             </div>
         </div>
 
-        <div class="table-container">
-            <table id="history-table">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>N° Lote</th>
-                        <th>Grano</th>
-                        <th>Cantidad</th>
-                        <th>Bultos / Kg Prom.</th>
-                        <th>Polímero</th>
-                        <th>Apron/Maxin</th>
-                        <th>Inoculante</th>
-                        <th>Total Mezcla</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="history-body"></tbody>
-            </table>
-            <div id="empty-state" class="empty-state">
-                <div class="empty-icon">🌱</div>
-                <p>No hay registros cargados.<br>Hacé clic en <strong>+ Nuevo Curado</strong> para comenzar.</p>
+        <!-- PESTAÑA: STOCKS CURADO -->
+        <div id="tab-stocks" class="tab-pane">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Stocks de Curado</h1>
+                    <p>Saldos de Bultos por Lote</p>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N° Lote</th>
+                            <th>Bultos Curados</th>
+                            <th>Bultos Despachados</th>
+                            <th>Bultos Devueltos</th>
+                            <th>Stock Disponible</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stocks-body"></tbody>
+                </table>
+                <div id="stocks-empty-state" class="empty-state">
+                    <div class="empty-icon">📦</div>
+                    <p>No hay lotes con stock.<br>Los curados registrados aparecerán aquí.</p>
+                </div>
             </div>
         </div>
+
+        <!-- PESTAÑA: DESPACHOS -->
+        <div id="tab-despachos" class="tab-pane">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Despachos y Devoluciones</h1>
+                    <p id="dispatch-count">—</p>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-new-dispatch" class="btn btn-primary btn-large">+ Nuevo Movimiento</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>N° Lote</th>
+                            <th>Chofer</th>
+                            <th>Campo / Cosecha</th>
+                            <th>Bultos</th>
+                            <th>Kilos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dispatch-body"></tbody>
+                </table>
+                <div id="dispatch-empty-state" class="empty-state">
+                    <div class="empty-icon">🚚</div>
+                    <p>No hay movimientos.<br>Hacé clic en <strong>+ Nuevo Movimiento</strong>.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: STOCK INSUMOS -->
+        <div id="tab-insumos" class="tab-pane">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Stock de Insumos</h1>
+                    <p>Líquidos consumidos vs. disponibles</p>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-new-supply" class="btn btn-primary btn-large">+ Ingreso de Stock</button>
+                </div>
+            </div>
+            
+            <div class="insumos-grid">
+                <div class="insumo-card">
+                    <div class="insumo-header polimero-theme">Polímero</div>
+                    <div class="insumo-body">
+                        <div class="insumo-calc"><span>Ingresado:</span> <strong id="insumo-in-polimero">0.00 L</strong></div>
+                        <div class="insumo-calc"><span>Consumido:</span> <strong id="insumo-out-polimero" class="text-error">0.00 L</strong></div>
+                        <div class="insumo-divider"></div>
+                        <div class="insumo-calc is-total"><span>Disponible:</span> <strong id="insumo-stock-polimero">0.00 L</strong></div>
+                    </div>
+                </div>
+
+                <div class="insumo-card">
+                    <div class="insumo-header apron-theme">Apron/Maxin</div>
+                    <div class="insumo-body">
+                        <div class="insumo-calc"><span>Ingresado:</span> <strong id="insumo-in-apron">0.00 L</strong></div>
+                        <div class="insumo-calc"><span>Consumido:</span> <strong id="insumo-out-apron" class="text-error">0.00 L</strong></div>
+                        <div class="insumo-divider"></div>
+                        <div class="insumo-calc is-total"><span>Disponible:</span> <strong id="insumo-stock-apron">0.00 L</strong></div>
+                    </div>
+                </div>
+
+                <div class="insumo-card">
+                    <div class="insumo-header inoculante-theme">Inoculante</div>
+                    <div class="insumo-body">
+                        <div class="insumo-calc"><span>Ingresado:</span> <strong id="insumo-in-inoculante">0.00 L</strong></div>
+                        <div class="insumo-calc"><span>Consumido:</span> <strong id="insumo-out-inoculante" class="text-error">0.00 L</strong></div>
+                        <div class="insumo-divider"></div>
+                        <div class="insumo-calc is-total"><span>Disponible:</span> <strong id="insumo-stock-inoculante">0.00 L</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-subtitle">Historial de Ingresos de Insumos</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Insumo</th>
+                            <th>Cantidad Ingresada</th>
+                            <th>Remito / Obs</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supply-body"></tbody>
+                </table>
+                <div id="supply-empty-state" class="empty-state">
+                    <div class="empty-icon">🧪</div>
+                    <p>No hay ingresos registrados.<br>Hacé clic en <strong>+ Ingreso de Stock</strong>.</p>
+                </div>
+            </div>
+        </div>
+
     </div>
+
+    <!-- NAVEGACIÓN INFERIOR -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-tab="tab-curado">
+            <span class="nav-icon">🌱</span>
+            <span class="nav-label">Curado</span>
+        </button>
+        <button class="nav-item" data-tab="tab-stocks">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Stocks Curado</span>
+        </button>
+        <button class="nav-item" data-tab="tab-despachos">
+            <span class="nav-icon">🚚</span>
+            <span class="nav-label">Despachos</span>
+        </button>
+        <button class="nav-item" data-tab="tab-insumos">
+            <span class="nav-icon">🧪</span>
+            <span class="nav-label">Insumos</span>
+        </button>
+    </nav>
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -271,6 +423,106 @@
                     <button type="submit" class="btn btn-primary">Guardar Registro</button>
                 </div>
 
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: DESPACHOS Y DEVOLUCIONES
+════════════════════════════════════════════ -->
+<div id="dispatch-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modal-dispatch-title">Registrar Movimiento</h2>
+            <button id="btn-close-dispatch" class="btn-icon">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="dispatch-form">
+                <div class="form-grid">
+                    <div class="form-section-title">Datos del Movimiento</div>
+                    <div class="input-group">
+                        <label for="dispatch-tipo">Tipo de Movimiento</label>
+                        <select id="dispatch-tipo" required>
+                            <option value="Despacho">Despacho (Salida)</option>
+                            <option value="Devolución">Devolución (Ingreso)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="dispatch-fecha">Fecha</label>
+                        <input type="date" id="dispatch-fecha" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="dispatch-lote">Lote Asignado</label>
+                        <select id="dispatch-lote" required>
+                            <option value="">Seleccione un Lote...</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="dispatch-chofer">Chofer</label>
+                        <input type="text" id="dispatch-chofer" required placeholder="Nombre del Chofer">
+                    </div>
+                    <div class="input-group">
+                        <label for="dispatch-campo">Campo</label>
+                        <input type="text" id="dispatch-campo" required placeholder="Nombre del Campo">
+                    </div>
+                    <div class="input-group">
+                        <label for="dispatch-cosecha">Cosecha</label>
+                        <input type="text" id="dispatch-cosecha" required placeholder="Ej: 2023/2024">
+                    </div>
+                    <div class="input-group">
+                        <label for="dispatch-bultos">Bultos</label>
+                        <input type="number" id="dispatch-bultos" required min="1" step="1" placeholder="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="dispatch-kilos">Kilos</label>
+                        <input type="number" id="dispatch-kilos" required min="0.01" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="modal-footer" style="margin-top: 1rem;">
+                    <button type="button" id="btn-cancel-dispatch" class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Movimiento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: INGRESO DE INSUMOS
+════════════════════════════════════════════ -->
+<div id="supply-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="modal-supply-title">Ingreso de Stock (Insumos)</h2>
+            <button id="btn-close-supply" class="btn-icon">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="supply-form">
+                <div class="input-group">
+                    <label for="supply-fecha">Fecha</label>
+                    <input type="date" id="supply-fecha" required>
+                </div>
+                <div class="input-group">
+                    <label for="supply-insumo">Insumo</label>
+                    <select id="supply-insumo" required>
+                        <option value="polimero">Polímero</option>
+                        <option value="apron">Apron / Maxin</option>
+                        <option value="inoculante">Inoculante</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="supply-cantidad">Cantidad Ingresada (Litros)</label>
+                    <input type="number" id="supply-cantidad" required min="0.01" step="0.01" placeholder="0.00">
+                </div>
+                <div class="input-group">
+                    <label for="supply-remito">N° Remito / Observaciones</label>
+                    <input type="text" id="supply-remito" required placeholder="Ej: R-0001-0000234">
+                </div>
+                <div class="modal-footer" style="margin-top: 1rem;">
+                    <button type="button" id="btn-cancel-supply" class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar Ingreso</button>
+                </div>
             </form>
         </div>
     </div>

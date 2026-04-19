@@ -456,6 +456,149 @@ tbody tr:last-child td { border-bottom:none; }
 .dose-total-value { font-size:1.5rem; font-weight:800; letter-spacing:-.02em; color:var(--accent); }
 
 /* ════════════════════════════════
+   TABS & NAVIGATION
+════════════════════════════════ */
+.tab-pane {
+    display: none;
+    animation: fadeIn 0.35s var(--ease) forwards;
+}
+.tab-pane.active {
+    display: block;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #ddd;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    z-index: 100;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    color: var(--text-muted);
+    font-family: inherit;
+    cursor: pointer;
+    width: 25%;
+    padding: 0.4rem;
+    transition: all 0.2s;
+}
+
+.nav-item:hover {
+    color: var(--primary);
+}
+
+.nav-item.active {
+    color: var(--primary);
+}
+
+.nav-icon {
+    font-size: 1.3rem;
+    filter: grayscale(100%) opacity(0.6);
+    transition: all 0.2s;
+}
+
+.nav-item.active .nav-icon {
+    filter: grayscale(0%) opacity(1);
+    transform: translateY(-2px);
+}
+
+.nav-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ════════════════════════════════
+   INSUMOS GRID
+════════════════════════════════ */
+.insumos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.insumo-card {
+    background: #fff;
+    border: 1.5px solid #ccc;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.insumo-header {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.8rem 1.2rem;
+    color: #fff;
+    font-size: 0.9rem;
+}
+.polimero-theme { background: #34495e; }
+.apron-theme { background: #e67e22; }
+.inoculante-theme { background: #27ae60; }
+
+.insumo-body {
+    padding: 1.2rem;
+}
+
+.insumo-calc {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.insumo-calc span {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.insumo-calc strong {
+    font-size: 1rem;
+    color: var(--text-main);
+}
+
+.insumo-divider {
+    height: 1px;
+    background: #eee;
+    margin: 0.8rem 0;
+}
+
+.insumo-calc.is-total strong {
+    font-size: 1.4rem;
+    color: var(--primary);
+}
+
+.text-error {
+    color: var(--error) !important;
+}
+.section-subtitle {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    font-weight: 800;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 0.3rem;
+}
+
+/* ════════════════════════════════
    SAFE AREA (notch / Home Bar)
 ════════════════════════════════ */
 .app-header {
@@ -464,7 +607,8 @@ tbody tr:last-child td { border-bottom:none; }
     padding-right: max(1.5rem, env(safe-area-inset-right));
 }
 .dashboard-content {
-    padding-bottom: max(1.4rem, env(safe-area-inset-bottom));
+    /* added extra padding bottom so bottom nav doesn't overlap text */
+    padding-bottom: calc(75px + max(1.4rem, env(safe-area-inset-bottom)));
 }
 
 /* ════════════════════════════════
@@ -474,7 +618,7 @@ tbody tr:last-child td { border-bottom:none; }
     .form-grid { grid-template-columns: 1fr 1fr; }
     .header-actions { gap: .4rem; }
     .btn-large { padding: .6rem .9rem; font-size: .8rem; }
-    .dashboard-content { padding: 1rem; }
+    .dashboard-content { padding: 1rem; padding-bottom: calc(85px + env(safe-area-inset-bottom)); }
     .table-container { overflow-x: auto; }
     table { min-width: 700px; }
 }
@@ -506,7 +650,7 @@ tbody tr:last-child td { border-bottom:none; }
     .dashboard-header { flex-direction: column; align-items: flex-start; gap: .65rem; }
     .dashboard-header h1 { font-size: 1.1rem; }
     .search-box input { max-width: 100%; width: 100%; }
-    .dashboard-content { padding: .8rem; }
+    .dashboard-content { padding: .8rem; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 
     /* Table scrollable */
     .table-container { border-radius: 6px; }
@@ -537,6 +681,9 @@ tbody tr:last-child td { border-bottom:none; }
     .calculation-summary { padding: .8rem; }
     .dose-total-bar { padding: .6rem .85rem; }
     .dose-total-value { font-size: 1.25rem; }
+    
+    .nav-label { font-size: 0.55rem; }
+    .nav-icon { font-size: 1.2rem; }
 }
 
 /* ════════════════════════════════
@@ -558,15 +705,19 @@ tbody tr:last-child td { border-bottom:none; }
     .subtitle { margin-bottom: 1rem; }
     .modal-content { max-height: 98vh; }
     .modal { align-items: center; }
+    .bottom-nav { display: none; /* Might want to show side menu later */ }
+    .dashboard-content { padding-bottom: 1rem; }
 }
 
 /* ════════════════════════════════
    PRINT / EXPORT
 ════════════════════════════════ */
 @media print {
-    .app-header, .dashboard-header .search-box,
-    .header-actions, .actions-cell, #btn-new-record { display: none !important; }
+    .app-header, .dashboard-header .search-box, .bottom-nav,
+    .header-actions, .actions-cell, #btn-new-record, .tab-pane:not(.active) { display: none !important; }
     table { min-width: unset; font-size: 11px; }
     .table-container { border: none; box-shadow: none; }
+    body { background: #fff; }
+    .dashboard-content { padding: 0 !important; }
 }
 
