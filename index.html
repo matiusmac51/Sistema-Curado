@@ -453,12 +453,6 @@
                         <input type="date" id="dispatch-fecha" required>
                     </div>
                     <div class="input-group">
-                        <label for="dispatch-lote">Lote Asignado</label>
-                        <select id="dispatch-lote" required>
-                            <option value="">Seleccione un Lote...</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
                         <label for="dispatch-chofer">Chofer</label>
                         <input type="text" id="dispatch-chofer" required placeholder="Nombre del Chofer">
                     </div>
@@ -471,13 +465,18 @@
                         <input type="text" id="dispatch-cosecha" required placeholder="Ej: 2023/2024">
                     </div>
                     <div class="input-group">
-                        <label for="dispatch-bultos">Bultos</label>
-                        <input type="number" id="dispatch-bultos" required min="1" step="1" placeholder="0">
+                        <label>Kilos Totales (Estimado)</label>
+                        <input type="text" id="dispatch-kilos-global" class="input-readonly" readonly value="0.00 Kg">
                     </div>
-                    <div class="input-group">
-                        <label for="dispatch-kilos">Kilos</label>
-                        <input type="number" id="dispatch-kilos" required min="0.01" step="0.01" placeholder="0.00">
+                </div>
+                
+                <div class="calculation-summary" style="margin-top: 1rem;">
+                    <h3>Lotes a Mover</h3>
+                    <div id="dispatch-items-container">
+                        <!-- Items dynamicos -->
                     </div>
+                    <button type="button" id="btn-add-lote" class="btn btn-secondary btn-small" style="width: 100%; margin-top: 0.5rem; text-align: center; border-style: dashed;">+ Añadir Lote al Viaje</button>
+                </div>
                 </div>
                 <div class="modal-footer" style="margin-top: 1rem;">
                     <button type="button" id="btn-cancel-dispatch" class="btn btn-secondary">Cancelar</button>
@@ -522,6 +521,58 @@
                 <div class="modal-footer" style="margin-top: 1rem;">
                     <button type="button" id="btn-cancel-supply" class="btn btn-secondary">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Registrar Ingreso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: EXPORTAR DATOS
+════════════════════════════════════════════ -->
+<div id="export-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2>Compartir / Exportar Datos</h2>
+            <button id="btn-close-export" class="btn-icon">×</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Seleccioná qué módulos deseas incluir en tu reporte:</p>
+            <form id="export-form">
+                <div class="product-cards">
+                    <label class="product-card" style="padding: 0.8rem;">
+                        <div class="product-toggle-wrapper">
+                            <input type="checkbox" id="exp-curados" checked>
+                            <span class="product-name">1. Historial de Curados</span>
+                        </div>
+                    </label>
+                    <label class="product-card" style="padding: 0.8rem;">
+                        <div class="product-toggle-wrapper">
+                            <input type="checkbox" id="exp-stocks" checked>
+                            <span class="product-name">2. Stocks de Semilla (Lotes)</span>
+                        </div>
+                    </label>
+                    <label class="product-card" style="padding: 0.8rem;">
+                        <div class="product-toggle-wrapper">
+                            <input type="checkbox" id="exp-despachos" checked>
+                            <span class="product-name">3. Despachos y Devoluciones</span>
+                        </div>
+                    </label>
+                    <label class="product-card" style="padding: 0.8rem;">
+                        <div class="product-toggle-wrapper">
+                            <input type="checkbox" id="exp-insumos" checked>
+                            <span class="product-name">4. Consumo de Insumos</span>
+                        </div>
+                    </label>
+                </div>
+                <!-- Oculto para uso interno (saber si cliqueó whatsapp o excel) -->
+                <input type="hidden" id="export-target" value="">
+
+                <div class="modal-footer" style="margin-top: 1rem; flex-direction: column; gap: 0.5rem;">
+                    <button type="button" class="btn btn-whatsapp btn-block" onclick="executeExport('whatsapp')">Enviar por WhatsApp</button>
+                    <button type="button" class="btn btn-accent btn-block" onclick="executeExport('excel')">Descargar Excel (.xlsx)</button>
                 </div>
             </form>
         </div>
