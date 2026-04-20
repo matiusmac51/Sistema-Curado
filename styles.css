@@ -769,7 +769,7 @@ tbody tr:last-child td { border-bottom:none; }
 #main-fab {
     position: fixed;
     bottom: calc(85px + env(safe-area-inset-bottom));
-    right: 20px;
+    left: 20px;
     z-index: 999;
     background: #25D366; /* Verde tipo WhatsApp */
     box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
@@ -781,7 +781,7 @@ tbody tr:last-child td { border-bottom:none; }
 /* Ajuste móvil FAB */
 @media (max-width: 600px) {
     #main-fab {
-        right: 15px;
+        left: 15px;
         bottom: calc(85px + env(safe-area-inset-bottom));
     }
     .fab {
