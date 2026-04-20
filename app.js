@@ -177,7 +177,7 @@ function renderTable(q = null) {
             <td><strong>${r.lote}</strong></td>
             <td>${r.variedad}</td>
             <td>${r.cantidad} ${r.unidad}</td>
-            <td><strong>${r.bultos||'—'}</strong> | ${r.contenidoPromedio ? r.contenidoPromedio.toFixed(2)+' Kg' : '—'}</td>
+            <td><strong>${r.bultos||'—'}</strong> | ${r.contenidoPromedio ? Math.round(r.contenidoPromedio)+' Kg' : '—'}</td>
             <td>${r.usePolimero!==false   ? r.polimero.toFixed(3)+' L'   : '—'}</td>
             <td>${r.useApron!==false      ? r.apron.toFixed(3)+' L'      : '—'}</td>
             <td>${r.useInoculante!==false ? r.inoculante.toFixed(3)+' L' : '—'}</td>
@@ -202,15 +202,15 @@ function renderStocks() {
     loteKeys.forEach(l => {
         const d = lotesStats[l];
         const stockActual = d.curados - d.despachados + d.devueltos;
-        const stockKilos = stockActual * d.avgKg;
+        const stockKilos = Math.round(stockActual * d.avgKg);
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><strong>${l}</strong><br><small style="color:var(--text-muted)">${d.avgKg.toFixed(2)} Kg/bulto</small></td>
+            <td><strong>${l}</strong><br><small style="color:var(--text-muted)">${Math.round(d.avgKg)} Kg/bulto</small></td>
             <td>${d.curados}</td>
             <td class="text-error">${d.despachados}</td>
             <td style="color:#27ae60;">${d.devueltos}</td>
-            <td><strong>${stockActual}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(${stockKilos.toFixed(1)} Kg)</span></td>
+            <td><strong>${stockActual}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">(${stockKilos} Kg)</span></td>
         `;
         stocksBody.appendChild(tr);
     });
@@ -246,7 +246,7 @@ function renderDispatches() {
             <td>${d.chofer}</td>
             <td>${d.campo} <br> <small>${d.cosecha}</small></td>
             <td><strong style="color:${typeColor}">${prefix}${sumBultos}</strong></td>
-            <td>${d.kilos} Kg</td>
+            <td>${Math.round(d.kilos)} Kg</td>
             <td class="actions-cell">
                 <button class="btn btn-small btn-danger" onclick="deleteDispatch('${d.id}')">×</button>
             </td>
@@ -320,7 +320,7 @@ function addDispatchItem(loteVal = '', bultosVal = 1) {
             <option value="">Seleccione Lote...</option>
             ${optionsJSON}
         </select>
-        <input type="number" class="dispatch-item-bultos" required min="1" step="1" placeholder="Bultos" value="${bultosVal}" style="flex: 1;">
+        <input type="number" class="dispatch-item-bultos" required min="0.01" step="0.01" placeholder="Bultos" value="${bultosVal}" style="flex: 1;">
         <button type="button" class="btn btn-danger btn-small" onclick="this.parentElement.remove(); calcDispatchKilos();">X</button>
     `;
     
@@ -343,7 +343,7 @@ window.calcDispatchKilos = function() {
             sum += bultos * lotesStats[lote].avgKg;
         }
     });
-    dispatchKilosGlobal.value = sum.toFixed(2) + ' Kg';
+    dispatchKilosGlobal.value = Math.round(sum) + ' Kg';
 }
 
 // ════════════════════════════════════════════
@@ -354,18 +354,31 @@ window.executeExport = function(method) {
     const wS = document.getElementById('exp-stocks').checked;
     const wD = document.getElementById('exp-despachos').checked;
     const wI = document.getElementById('exp-insumos').checked;
+    
+    const dFrom = document.getElementById('export-date-from').value;
+    const dTo = document.getElementById('export-date-to').value;
 
     if(!wC && !wS && !wD && !wI) return alert('Debes seleccionar al menos un módulo.');
+
+    const filterArr = (arr) => {
+        return arr.filter(i => {
+            if(!i.fecha) return true;
+            if(dFrom && i.fecha < dFrom) return false;
+            if(dTo && i.fecha > dTo) return false;
+            return true;
+        });
+    };
 
     if (method === 'excel') {
         const wb = XLSX.utils.book_new();
 
         if(wC) {
+            const rC_filt = filterArr(records);
             const hC = ['Fecha','Hora Inicio','Hora Fin','Nº Lote','Variedad','Unidad','Cantidad','Nº Bultos','Kg/Bulto','Polímero(L)','Apron/Maxin(L)','Inoculante(L)','Total Mezcla(L)'];
-            const rC = records.map(r => ({
+            const rC = rC_filt.map(r => ({
                 'Fecha': r.fecha||'', 'Hora Inicio': r.horaInicio||'', 'Hora Fin': r.horaFin||'',
                 'Nº Lote': r.lote, 'Variedad': r.variedad, 'Unidad': r.unidad, 'Cantidad': r.cantidad,
-                'Nº Bultos': r.bultos||'', 'Kg/Bulto': r.contenidoPromedio ? parseFloat(r.contenidoPromedio.toFixed(2)) : '',
+                'Nº Bultos': r.bultos||'', 'Kg/Bulto': r.contenidoPromedio ? Math.round(r.contenidoPromedio) : '',
                 'Polímero(L)': r.usePolimero!==false ? parseFloat(r.polimero.toFixed(3)) : '',
                 'Apron/Maxin(L)': r.useApron!==false ? parseFloat(r.apron.toFixed(3)) : '',
                 'Inoculante(L)': r.useInoculante!==false ? parseFloat(r.inoculante.toFixed(3)) : '',
@@ -376,6 +389,8 @@ window.executeExport = function(method) {
         }
 
         if(wS) {
+            // Stocks are absolute totals, usually filtering by date might only reflect stock AT that date, 
+            // but for simplicity we export the CURRENT stock.
             const hS = ['Nº Lote', 'Bultos Curados', 'Bultos Despachados', 'Bultos Devueltos', 'Stock Disponible (Bultos)', 'Stock Disponible (Kilos)', 'Kg Promedio/Bulto'];
             const rS = Object.keys(lotesStats).map(l => {
                 const s = lotesStats[l];
@@ -383,7 +398,7 @@ window.executeExport = function(method) {
                 return {
                     'Nº Lote': l, 'Bultos Curados': s.curados, 'Bultos Despachados': s.despachados,
                     'Bultos Devueltos': s.devueltos, 'Stock Disponible (Bultos)': disp,
-                    'Stock Disponible (Kilos)': parseFloat((disp * s.avgKg).toFixed(2)), 'Kg Promedio/Bulto': parseFloat(s.avgKg.toFixed(2))
+                    'Stock Disponible (Kilos)': Math.round(disp * s.avgKg), 'Kg Promedio/Bulto': Math.round(s.avgKg)
                 };
             });
             const wsS = XLSX.utils.json_to_sheet(rS, { header: hS });
@@ -391,13 +406,14 @@ window.executeExport = function(method) {
         }
 
         if(wD) {
+            const rD_filt = filterArr(dispatches);
             const hD = ['Fecha', 'Tipo', 'Chofer', 'Campo', 'Cosecha', 'Lote Afectado', 'Bultos Moviéndose', 'Kilos Viaje Global'];
             const rD = [];
-            dispatches.forEach(d => {
+            rD_filt.forEach(d => {
                 (d.items || []).forEach(item => {
                     rD.push({
                         'Fecha': d.fecha, 'Tipo': d.tipo, 'Chofer': d.chofer, 'Campo': d.campo, 'Cosecha': d.cosecha,
-                        'Lote Afectado': item.lote, 'Bultos Moviéndose': item.bultos, 'Kilos Viaje Global': d.kilos
+                        'Lote Afectado': item.lote, 'Bultos Moviéndose': item.bultos, 'Kilos Viaje Global': Math.round(d.kilos)
                     });
                 });
             });
@@ -406,8 +422,9 @@ window.executeExport = function(method) {
         }
 
         if(wI) {
+            const rI_filt = filterArr(supplies);
             const hI = ['Fecha', 'Insumo', 'Cantidad Ingresada (L)', 'Remito'];
-            const rI = supplies.map(s => ({
+            const rI = rI_filt.map(s => ({
                 'Fecha': s.fecha, 'Insumo': s.insumo, 'Cantidad Ingresada (L)': parseFloat(s.cantidad), 'Remito': s.remito
             }));
             const wsI = XLSX.utils.json_to_sheet(rI, { header: hI });
@@ -415,27 +432,40 @@ window.executeExport = function(method) {
         }
 
         const date = new Date().toISOString().split('T')[0];
-        XLSX.writeFile(wb, `Manisur_ReporteGlobal_${currentUser}_${date}.xlsx`);
+        XLSX.writeFile(wb, `Manisur_Reporte_${currentUser}_${date}.xlsx`);
         exportModal.classList.remove('active');
     } 
     
     if (method === 'whatsapp') {
-        const date = new Date().toLocaleDateString('es-AR');
-        let msg = `✅ *Manisur — Reporte Consolidado*\nOperador: ${currentUser}\nFecha: ${date}\n`;
+        const dateStr = new Date().toLocaleDateString('es-AR');
+        let msg = `✅ *Manisur — Reporte Consolidado*\nOperador: ${currentUser}\nFecha de emision: ${dateStr}\n`;
+        if (dFrom || dTo) msg += `Filtro aplicado: ${dFrom||'...'} al ${dTo||'...'}\n`;
 
-        if(wC && records.length > 0) {
-            msg += `\n*—— CURADOS (Últimos 3) ——*\n`;
-            [...records].reverse().slice(0, 3).forEach((r) => {
-                msg += `▶ Lote: ${r.lote} | ${r.bultos||'-'} Bultos | ${r.total.toFixed(2)} L Mezcla\n`;
-            });
+        if(wC) {
+            const rC_filt = filterArr(records);
+            if(rC_filt.length > 0) {
+                msg += `\n*—— CURADOS ——*\n`;
+                [...rC_filt].reverse().slice(0, 5).forEach((r) => {
+                    msg += `▶ Lote: ${r.lote} | ${r.bultos||'-'} Bultos | ${r.total.toFixed(2)} L Mezcla\n`;
+                });
+            }
         }
         if(wS && Object.keys(lotesStats).length > 0) {
             msg += `\n*—— STOCK LOTES ——*\n`;
             Object.keys(lotesStats).forEach(l => {
                 const ls = lotesStats[l];
                 const disp = ls.curados - ls.despachados + ls.devueltos;
-                if(disp > 0) msg += `▶ ${l}: ${disp} Bultos (${(disp*ls.avgKg).toFixed(1)} Kg)\n`;
+                if(disp > 0) msg += `▶ ${l}: ${disp} Bultos (${Math.round(disp*ls.avgKg)} Kg)\n`;
             });
+        }
+        if(wD) {
+            const rD_filt = filterArr(dispatches);
+            if(rD_filt.length > 0) {
+                msg += `\n*—— DESPACHOS ——*\n`;
+                [...rD_filt].reverse().slice(0, 5).forEach((d) => {
+                    msg += `▶ ${d.tipo}: ${d.chofer} (${d.items.map(i=>i.lote).join(', ')}) - ${Math.round(d.kilos)} Kg\n`;
+                });
+            }
         }
         if(wI) {
             msg += `\n*—— STOCK INSUMOS ——*\n`;
@@ -499,7 +529,7 @@ function calcDose() {
     out.apron.textContent      = useA ? `${apron.toFixed(3)} L`      : '— L';
     out.inoculante.textContent = useI ? `${inoculante.toFixed(3)} L` : '— L';
     out.total.textContent      = `${total.toFixed(3)} L`;
-    inp.contenidoBulto.value   = `${contenidoPromedio.toFixed(2)} Kg / Bulto`;
+    inp.contenidoBulto.value   = `${Math.round(contenidoPromedio)} Kg / Bulto`;
 
     return { polimero, apron, inoculante, total, contenidoPromedio,
              usePolimero:useP, useApron:useA, useInoculante:useI,

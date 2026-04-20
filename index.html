@@ -87,9 +87,6 @@
             <button id="btn-whatsapp" class="btn btn-whatsapp" title="Compartir último registro por WhatsApp">
                 💬 WhatsApp
             </button>
-            <button id="btn-new-record" class="btn btn-primary btn-large">
-                + Nuevo Curado
-            </button>
             <button id="btn-logout" class="btn btn-ghost">Salir ×</button>
         </div>
     </header>
@@ -129,8 +126,14 @@
                 </table>
                 <div id="empty-state" class="empty-state">
                     <div class="empty-icon">🌱</div>
-                    <p>No hay registros cargados.<br>Hacé clic en <strong>+ Nuevo Curado</strong> para comenzar.</p>
+                    <p>No hay registros cargados.<br>Haz clic en el botón de abajo para comenzar.</p>
                 </div>
+            </div>
+            
+            <div class="fab-container">
+                <button id="btn-new-record" class="fab" title="Nuevo Curado">
+                    <i class="fab-icon">+</i>
+                </button>
             </div>
         </div>
 
@@ -169,9 +172,6 @@
                     <h1>Despachos y Devoluciones</h1>
                     <p id="dispatch-count">—</p>
                 </div>
-                <div class="header-actions">
-                    <button id="btn-new-dispatch" class="btn btn-primary btn-large">+ Nuevo Movimiento</button>
-                </div>
             </div>
             <div class="table-container">
                 <table>
@@ -191,8 +191,14 @@
                 </table>
                 <div id="dispatch-empty-state" class="empty-state">
                     <div class="empty-icon">🚚</div>
-                    <p>No hay movimientos.<br>Hacé clic en <strong>+ Nuevo Movimiento</strong>.</p>
+                    <p>No hay movimientos.<br>Haz clic en el botón inferior para comenzar.</p>
                 </div>
+            </div>
+
+            <div class="fab-container">
+                <button id="btn-new-dispatch" class="fab" title="Nuevo Movimiento">
+                    <i class="fab-icon">+</i>
+                </button>
             </div>
         </div>
 
@@ -202,9 +208,6 @@
                 <div>
                     <h1>Stock de Insumos</h1>
                     <p>Líquidos consumidos vs. disponibles</p>
-                </div>
-                <div class="header-actions">
-                    <button id="btn-new-supply" class="btn btn-primary btn-large">+ Ingreso de Stock</button>
                 </div>
             </div>
             
@@ -242,22 +245,28 @@
 
             <h2 class="section-subtitle">Historial de Ingresos de Insumos</h2>
             <div class="table-container">
-                <table>
+                <table style="margin-bottom: 2rem;">
                     <thead>
                         <tr>
                             <th>Fecha</th>
                             <th>Insumo</th>
                             <th>Cantidad Ingresada</th>
-                            <th>Remito / Obs</th>
+                            <th>Remito</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="supply-body"></tbody>
                 </table>
                 <div id="supply-empty-state" class="empty-state">
-                    <div class="empty-icon">🧪</div>
-                    <p>No hay ingresos registrados.<br>Hacé clic en <strong>+ Ingreso de Stock</strong>.</p>
+                    <div class="empty-icon">🔬</div>
+                    <p>No hay ingresos registrados.<br>Haz clic en el botón inferior para comenzar.</p>
                 </div>
+            </div>
+
+            <div class="fab-container">
+                <button id="btn-new-supply" class="fab" title="Ingreso de Insumo">
+                    <i class="fab-icon">+</i>
+                </button>
             </div>
         </div>
 
@@ -343,7 +352,7 @@
                     </div>
                     <div class="input-group">
                         <label for="bultos">N° de Bultos</label>
-                        <input type="number" id="bultos" step="1" min="1" required placeholder="1">
+                        <input type="number" id="bultos" step="0.01" min="0.01" required placeholder="1">
                     </div>
                     <div class="input-group" style="grid-column: span 3;">
                         <label>Peso Promedio por Bulto (calculado)</label>
@@ -539,8 +548,20 @@
             <button id="btn-close-export" class="btn-icon">×</button>
         </div>
         <div class="modal-body">
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Seleccioná qué módulos deseas incluir en tu reporte:</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Seleccioná qué módulos deseas incluir en tu reporte y (opcionalmente) filtra por fecha de creación.</p>
             <form id="export-form">
+                
+                <div class="form-grid" style="margin-bottom: 1rem;">
+                    <div class="input-group">
+                        <label for="export-date-from">Desde (Opcional)</label>
+                        <input type="date" id="export-date-from">
+                    </div>
+                    <div class="input-group">
+                        <label for="export-date-to">Hasta (Opcional)</label>
+                        <input type="date" id="export-date-to">
+                    </div>
+                </div>
+
                 <div class="product-cards">
                     <label class="product-card" style="padding: 0.8rem;">
                         <div class="product-toggle-wrapper">
