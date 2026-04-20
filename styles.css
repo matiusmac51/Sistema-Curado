@@ -766,11 +766,23 @@ tbody tr:last-child td { border-bottom:none; }
     line-height: 1;
 }
 
+#main-fab {
+    position: fixed;
+    bottom: calc(85px + env(safe-area-inset-bottom));
+    right: 20px;
+    z-index: 999;
+    background: #25D366; /* Verde tipo WhatsApp */
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+}
+#main-fab:hover {
+    background: #20BA56;
+}
+
 /* Ajuste móvil FAB */
 @media (max-width: 600px) {
-    .fab-container {
+    #main-fab {
         right: 15px;
-        bottom: calc(80px + env(safe-area-inset-bottom) + 10px);
+        bottom: calc(85px + env(safe-area-inset-bottom));
     }
     .fab {
         width: 55px;

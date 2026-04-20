@@ -88,6 +88,23 @@ function showView(id) {
 function switchTab(tabId) {
     navItems.forEach(i => i.classList.toggle('active', i.dataset.tab === tabId));
     tabPanes.forEach(p => p.classList.toggle('active', p.id === tabId));
+
+    const fab = document.getElementById('main-fab');
+    if (!fab) return;
+
+    if (tabId === 'tab-curado') {
+        fab.style.display = 'flex';
+        fab.onclick = openRecordModal;
+    } else if (tabId === 'tab-despachos') {
+        fab.style.display = 'flex';
+        fab.onclick = openDispatchModal;
+    } else if (tabId === 'tab-insumos') {
+        fab.style.display = 'flex';
+        fab.onclick = openSupplyModal;
+    } else {
+        fab.style.display = 'none';
+        fab.onclick = null;
+    }
 }
 
 function signIn(email, persist = true) {
@@ -578,31 +595,8 @@ function bindEvents() {
         else document.getElementById('login-error').style.display = 'block';
     });
 
-    document.getElementById('btn-new-record').addEventListener('click', () => {
-        editingId = null; recordForm.reset(); out.modalTitle.textContent = 'Registrar Nuevo Curado';
-        const now = new Date(); inp.fecha.value = now.toISOString().split('T')[0]; inp.horaInicio.value = now.toTimeString().substring(0,5);
-        inp.usePolimero.checked = true; inp.useApron.checked = true; inp.useInoculante.checked = true;
-        inp.ratePolimero.value = RATES_PER_TON.polimero; inp.rateApron.value = RATES_PER_TON.apron; inp.rateInoculante.value = RATES_PER_TON.inoculante;
-        calcDose(); recordModal.classList.add('active');
-    });
-
     // Añadir Lote Modal Despacho
     btnAddLote.addEventListener('click', () => addDispatchItem());
-
-    document.getElementById('btn-new-dispatch').addEventListener('click', () => {
-        dispatchForm.reset();
-        dispatchItemsContainer.innerHTML = '';
-        addDispatchItem(); // Start with at least 1 row
-        document.getElementById('dispatch-fecha').value = new Date().toISOString().split('T')[0];
-        calcDispatchKilos();
-        dispatchModal.classList.add('active');
-    });
-
-    document.getElementById('btn-new-supply').addEventListener('click', () => {
-        supplyForm.reset();
-        document.getElementById('supply-fecha').value = new Date().toISOString().split('T')[0];
-        supplyModal.classList.add('active');
-    });
 
     const closeModals = () => document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
     document.querySelectorAll('.btn-icon, .btn-secondary').forEach(btn => {
@@ -670,6 +664,35 @@ function bindEvents() {
         supplies.push(s);
         persist(); closeModals();
     });
+
+    // Iniciar con la vista por detecto al bindear
+    switchTab('tab-curado');
+}
+
+// ════════════════════════════════════════════
+//  MODALES Y CONTROL FAB
+// ════════════════════════════════════════════
+function openRecordModal() {
+    editingId = null; recordForm.reset(); out.modalTitle.textContent = 'Registrar Nuevo Curado';
+    const now = new Date(); inp.fecha.value = now.toISOString().split('T')[0]; inp.horaInicio.value = now.toTimeString().substring(0,5);
+    inp.usePolimero.checked = true; inp.useApron.checked = true; inp.useInoculante.checked = true;
+    inp.ratePolimero.value = RATES_PER_TON.polimero; inp.rateApron.value = RATES_PER_TON.apron; inp.rateInoculante.value = RATES_PER_TON.inoculante;
+    calcDose(); recordModal.classList.add('active');
+}
+
+function openDispatchModal() {
+    dispatchForm.reset();
+    dispatchItemsContainer.innerHTML = '';
+    addDispatchItem(); 
+    document.getElementById('dispatch-fecha').value = new Date().toISOString().split('T')[0];
+    calcDispatchKilos();
+    dispatchModal.classList.add('active');
+}
+
+function openSupplyModal() {
+    supplyForm.reset();
+    document.getElementById('supply-fecha').value = new Date().toISOString().split('T')[0];
+    supplyModal.classList.add('active');
 }
 
 document.addEventListener('DOMContentLoaded', init);
