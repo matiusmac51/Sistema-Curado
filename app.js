@@ -172,6 +172,20 @@ function buildLotesStats() {
             if(d.tipo === 'Devolución') lotesStats[item.lote].devueltos += b;
         });
     });
+
+    const exportLotesBox = document.getElementById('export-lotes-checkboxes');
+    if (exportLotesBox) {
+        exportLotesBox.innerHTML = '';
+        Object.keys(lotesStats).forEach(lote => {
+            const lbl = document.createElement('label');
+            lbl.style.display = 'flex';
+            lbl.style.alignItems = 'center';
+            lbl.style.gap = '5px';
+            lbl.style.cursor = 'pointer';
+            lbl.innerHTML = `<input type="checkbox" value="${lote}" checked> <span>${lote}</span>`;
+            exportLotesBox.appendChild(lbl);
+        });
+    }
 }
 
 // ════════════════════════════════════════════
@@ -195,10 +209,10 @@ function renderTable(q = null) {
             <td>${r.variedad}</td>
             <td>${r.cantidad} ${r.unidad}</td>
             <td><strong>${r.bultos||'—'}</strong> | ${r.contenidoPromedio ? Math.round(r.contenidoPromedio)+' Kg' : '—'}</td>
-            <td>${r.usePolimero!==false   ? r.polimero.toFixed(3)+' L'   : '—'}</td>
-            <td>${r.useApron!==false      ? r.apron.toFixed(3)+' L'      : '—'}</td>
-            <td>${r.useInoculante!==false ? r.inoculante.toFixed(3)+' L' : '—'}</td>
-            <td><strong>${r.total.toFixed(3)} L</strong></td>
+            <td>${r.usePolimero!==false   ? r.polimero.toFixed(2)+' L'   : '—'}</td>
+            <td>${r.useApron!==false      ? r.apron.toFixed(2)+' L'      : '—'}</td>
+            <td>${r.useInoculante!==false ? r.inoculante.toFixed(2)+' L' : '—'}</td>
+            <td><strong>${r.total.toFixed(2)} L</strong></td>
             <td class="actions-cell">
                 <button class="btn btn-small btn-edit" onclick="editRecord('${r.id}')">Editar</button>
                 <button class="btn btn-small btn-danger" onclick="deleteRecord('${r.id}')">×</button>
@@ -375,13 +389,17 @@ window.executeExport = function(method) {
     const dFrom = document.getElementById('export-date-from').value;
     const dTo = document.getElementById('export-date-to').value;
 
+    const exportLotesBox = document.getElementById('export-lotes-checkboxes');
+    const selectedLotes = exportLotesBox ? Array.from(exportLotesBox.querySelectorAll('input:checked')).map(cb => cb.value) : [];
+
     if(!wC && !wS && !wD && !wI) return Swal.fire('Atención', 'Debes seleccionar al menos un módulo.', 'info');
 
-    const filterArr = (arr) => {
+    const filterArr = (arr, applyLoteFilter = false) => {
         return arr.filter(i => {
             if(!i.fecha) return true;
             if(dFrom && i.fecha < dFrom) return false;
             if(dTo && i.fecha > dTo) return false;
+            if(applyLoteFilter && i.lote && !selectedLotes.includes(i.lote)) return false;
             return true;
         });
     };
@@ -390,7 +408,7 @@ window.executeExport = function(method) {
         const wb = XLSX.utils.book_new();
 
         if(wC) {
-            const rC_filt = filterArr(records);
+            const rC_filt = filterArr(records, true);
             const hC = ['Fecha','Hora Inicio','Hora Fin','Nº Lote','Variedad','Unidad','Cantidad','Nº Bultos','Kg/Bulto','Polímero(L)','Apron/Maxin(L)','Inoculante(L)','Total Mezcla(L)'];
             const rC = rC_filt.map(r => ({
                 'Fecha': r.fecha||'', 'Hora Inicio': r.horaInicio||'', 'Hora Fin': r.horaFin||'',
@@ -458,7 +476,7 @@ window.executeExport = function(method) {
         if (dFrom || dTo) msg += `Filtro aplicado: ${dFrom||'...'} al ${dTo||'...'}\n`;
 
         if(wC) {
-            const rC_filt = filterArr(records);
+            const rC_filt = filterArr(records, true);
             if(rC_filt.length > 0) {
                 msg += `\n*—— CURADOS ——*\n`;
                 [...rC_filt].reverse().slice(0, 5).forEach((r) => {

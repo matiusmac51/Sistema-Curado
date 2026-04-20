@@ -555,12 +555,18 @@
                 </div>
 
                 <div class="product-cards">
-                    <label class="product-card" style="padding: 0.8rem;">
-                        <div class="product-toggle-wrapper">
-                            <input type="checkbox" id="exp-curados" checked>
+                    <div class="product-card" style="padding: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid #ddd; margin-bottom:0.5rem; border-radius: 6px;">
+                        <label class="product-toggle-wrapper">
+                            <input type="checkbox" id="exp-curados" checked onchange="document.getElementById('export-lotes-selector').style.display = this.checked ? 'block' : 'none'">
                             <span class="product-name">1. Historial de Curados</span>
+                        </label>
+                        <div id="export-lotes-selector" style="font-size: 0.85rem; padding-left: 1.8rem; display: block;">
+                            <p style="margin: 0 0 0.3rem 0; color: var(--primary);">Filtrar por Lotes (vaciá para exportar todos):</p>
+                            <div id="export-lotes-checkboxes" style="max-height: 100px; overflow-y: auto; background: #fff; border: 1px solid #ccc; padding: 5px; border-radius: 4px; display:flex; flex-direction:column; gap:4px;">
+                                <!-- Llenado por JS -->
+                            </div>
                         </div>
-                    </label>
+                    </div>
                     <label class="product-card" style="padding: 0.8rem;">
                         <div class="product-toggle-wrapper">
                             <input type="checkbox" id="exp-stocks" checked>
