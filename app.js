@@ -375,7 +375,7 @@ window.executeExport = function(method) {
     const dFrom = document.getElementById('export-date-from').value;
     const dTo = document.getElementById('export-date-to').value;
 
-    if(!wC && !wS && !wD && !wI) return alert('Debes seleccionar al menos un módulo.');
+    if(!wC && !wS && !wD && !wI) return Swal.fire('Atención', 'Debes seleccionar al menos un módulo.', 'info');
 
     const filterArr = (arr) => {
         return arr.filter(i => {
@@ -406,8 +406,6 @@ window.executeExport = function(method) {
         }
 
         if(wS) {
-            // Stocks are absolute totals, usually filtering by date might only reflect stock AT that date, 
-            // but for simplicity we export the CURRENT stock.
             const hS = ['Nº Lote', 'Bultos Curados', 'Bultos Despachados', 'Bultos Devueltos', 'Stock Disponible (Bultos)', 'Stock Disponible (Kilos)', 'Kg Promedio/Bulto'];
             const rS = Object.keys(lotesStats).map(l => {
                 const s = lotesStats[l];
@@ -451,6 +449,7 @@ window.executeExport = function(method) {
         const date = new Date().toISOString().split('T')[0];
         XLSX.writeFile(wb, `Manisur_Reporte_${currentUser}_${date}.xlsx`);
         exportModal.classList.remove('active');
+        Swal.fire('¡Exportado!', 'Tu archivo de Excel ha sido generado con éxito.', 'success');
     } 
     
     if (method === 'whatsapp') {
@@ -554,17 +553,27 @@ function calcDose() {
 }
 
 // ════════════════════════════════════════════
-//  ELIMINACIONES / EDICIÓN
+//  ELIMINACIONES / EDICIÓN (SWEETALERT2)
 // ════════════════════════════════════════════
 window.deleteRecord = function(id) {
-    if (confirm('¿Eliminar este registro de curado? Esto impactará los stocks.')) { records = records.filter(r => r.id !== id); persist(); }
+    Swal.fire({
+        title: '¿Eliminar curado?', text: "Se recalcularán los stocks permanentemente.", icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
+    }).then((res) => { if (res.isConfirmed) { records = records.filter(r => r.id !== id); persist(); } });
 };
 window.deleteDispatch = function(id) {
-    if (confirm('¿Eliminar este movimiento?')) { dispatches = dispatches.filter(d => d.id !== id); persist(); }
+    Swal.fire({
+        title: '¿Eliminar movimiento?', text: "La mercadería volverá al stock original.", icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
+    }).then((res) => { if (res.isConfirmed) { dispatches = dispatches.filter(d => d.id !== id); persist(); } });
 };
 window.deleteSupply = function(id) {
-    if (confirm('¿Eliminar este ingreso de stock?')) { supplies = supplies.filter(s => s.id !== id); persist(); }
+    Swal.fire({
+        title: '¿Eliminar ingreso?', text: "Puede afectar tus cálculos de disponibilidad.", icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
+    }).then((res) => { if (res.isConfirmed) { supplies = supplies.filter(s => s.id !== id); persist(); } });
 };
+
 window.editRecord = function(id) {
     const r = records.find(r => r.id === id);
     if (!r) return;
@@ -613,7 +622,9 @@ function bindEvents() {
 
     recordForm.addEventListener('submit', e => {
         e.preventDefault();
-        const dose = calcDose(); if (!dose) return alert('Ingresá una cantidad válida.');
+        const dose = calcDose(); 
+        if (!dose) return Swal.fire('Error', 'Ingresá una cantidad de kilos o unidades mayor a cero.', 'warning');
+        
         const record = {
             id: editingId || Date.now().toString(), fecha: inp.fecha.value, horaInicio: inp.horaInicio.value, horaFin: inp.horaFin.value,
             lote: inp.lote.value, variedad: inp.variedad.value, unidad: inp.unidad.value, cantidad: parseFloat(inp.cantidad.value), bultos: parseFloat(inp.bultos.value),
@@ -624,7 +635,10 @@ function bindEvents() {
             const idx = records.findIndex(r => r.id === editingId);
             if (idx !== -1) records[idx] = record;
             editingId = null;
-        } else { records.push(record); }
+        } else { 
+            records.push(record); 
+            Swal.fire({title: 'Guardado', text: 'El curado se guardó correctamente.', icon: 'success', timer: 1500, showConfirmButton: false});
+        }
         persist(); closeModals();
     });
 
@@ -639,11 +653,29 @@ function bindEvents() {
             if(l && b > 0) customItems.push({ lote: l, bultos: b });
         });
 
-        if(customItems.length === 0) return alert('Debés incluir y seleccionar al menos un lote con bultos.');
+        if(customItems.length === 0) return Swal.fire('Atención', 'Debés incluir y seleccionar al menos un lote con bultos.', 'warning');
+
+        const tipoMovimiento = document.getElementById('dispatch-tipo').value;
+
+        // Validaciones Matemáticas (Fase 3) - Solo para DESPACHOS
+        if (tipoMovimiento === 'Despacho') {
+            for (let item of customItems) {
+                const ls = lotesStats[item.lote];
+                if (!ls) return Swal.fire('Inventario Inválido', `El lote ${item.lote} no existe en el sistema.`, 'error');
+                const disponible = ls.curados - ls.despachados + ls.devueltos;
+                if (item.bultos > disponible) {
+                    return Swal.fire({
+                        title: 'Stock Insuficiente',
+                        text: `Intentas retirar ${item.bultos} bultos del Lote ${item.lote}, pero solo te quedan ${disponible} disponibles en tu patio.`,
+                        icon: 'error', confirmButtonText: 'Corregir'
+                    });
+                }
+            }
+        }
 
         const d = {
             id: Date.now().toString(),
-            tipo: document.getElementById('dispatch-tipo').value,
+            tipo: tipoMovimiento,
             fecha: document.getElementById('dispatch-fecha').value,
             chofer: document.getElementById('dispatch-chofer').value,
             campo: document.getElementById('dispatch-campo').value,
@@ -652,6 +684,7 @@ function bindEvents() {
             kilos: parseFloat(dispatchKilosGlobal.value.replace(' Kg', '')) || 0
         };
         dispatches.push(d);
+        Swal.fire({title: 'Éxito', text: `El ${tipoMovimiento.toLowerCase()} se registró perfectamente.`, icon: 'success', timer: 1800, showConfirmButton: false});
         persist(); closeModals();
     });
 
@@ -662,6 +695,7 @@ function bindEvents() {
             insumo: document.getElementById('supply-insumo').value, cantidad: parseFloat(document.getElementById('supply-cantidad').value), remito: document.getElementById('supply-remito').value
         };
         supplies.push(s);
+        Swal.fire({title: 'Ingresado', text: 'Stock de insumo actualizado.', icon: 'success', timer: 1500, showConfirmButton: false});
         persist(); closeModals();
     });
 

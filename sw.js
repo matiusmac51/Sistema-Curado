@@ -3,7 +3,7 @@
 //  Permite instalación y uso offline
 // ═══════════════════════════════════════════════
 
-const CACHE_NAME = 'manisur-curado-v5';
+const CACHE_NAME = 'manisur-curado-v6';
 const ASSETS = [
     '/',
     '/index.html',
