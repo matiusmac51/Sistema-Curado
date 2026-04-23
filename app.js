@@ -2,6 +2,30 @@
 //  AgroSeed — Sistema Logística de Curado
 // ═══════════════════════════════════════════════════
 
+// ── Configuración de Firebase ──
+const firebaseConfig = {
+    apiKey: "AIzaSyDEeBuDbGMKiVytaDwKHyBRunNMmcpOxFg",
+    authDomain: "logistica-de-curado-99023.firebaseapp.com",
+    projectId: "logistica-de-curado-99023",
+    storageBucket: "logistica-de-curado-99023.firebasestorage.app",
+    messagingSenderId: "13953394615",
+    appId: "1:13953394615:web:dfe83b4a24b6bf979d2a32",
+    measurementId: "G-9LJDVNTCQQ"
+};
+
+// Inicializar Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+const ADMIN_EMAIL = 'matius.cjs@gmail.com'; // La cuenta que contendrá todos los datos para todos
+let unsubRecords = null;
+let unsubDispatches = null;
+let unsubSupplies = null;
+
 const RATES_PER_TON  = { polimero: 6.3,   apron: 1.0,   inoculante: 3.0 };
 const RATES_PER_UNIT = { polimero: 7.875, apron: 1.250, inoculante: 3.750 };
 const KG_PER_UNIT    = 1250;
@@ -42,7 +66,6 @@ const supplyForm = document.getElementById('supply-form');
 const exportModal = document.getElementById('export-modal');
 
 const inp = {
-    email:          document.getElementById('email'),
     fecha:          document.getElementById('fecha'),
     horaInicio:     document.getElementById('hora-inicio'),
     horaFin:        document.getElementById('hora-fin'),
@@ -73,10 +96,15 @@ const out = {
 //  INIT
 // ════════════════════════════════════════════
 function init() {
-    try {
-        const saved = sessionStorage.getItem('ag_user');
-        if (saved) signIn(saved, false);
-    } catch(e) {}
+    // Escuchar cambios en la sesión de Firebase
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            signIn(user.email);
+        } else {
+            showView('login');
+        }
+    });
+
     bindEvents();
 }
 
@@ -107,36 +135,44 @@ function switchTab(tabId) {
     }
 }
 
-function signIn(email, persist = true) {
+function signIn(email) {
     currentUser = email.trim().toLowerCase();
     out.userBadge.textContent = currentUser;
-    if (persist) try { sessionStorage.setItem('ag_user', currentUser); } catch(e) {}
     loadData();
     showView('dashboard');
 }
 
 function signOut() {
     currentUser = null; records = []; dispatches = []; supplies = [];
-    try { sessionStorage.removeItem('ag_user'); } catch(e) {}
-    loginForm.reset();
-    document.getElementById('login-error').style.display = 'none';
-    showView('login');
+    if (unsubRecords) unsubRecords();
+    if (unsubDispatches) unsubDispatches();
+    if (unsubSupplies) unsubSupplies();
+    auth.signOut().then(() => {
+        showView('login');
+    });
 }
 
 function loadData() {
-    try { records = JSON.parse(localStorage.getItem(`agseed::${currentUser}`)) || []; } catch(e) { records = []; }
-    try { dispatches = JSON.parse(localStorage.getItem(`agseed::dispatch::${currentUser}`)) || []; } catch(e) { dispatches = []; }
-    try { supplies = JSON.parse(localStorage.getItem(`agseed::supply::${currentUser}`)) || []; } catch(e) { supplies = []; }
-    renderAll();
-}
+    if (unsubRecords) unsubRecords();
+    if (unsubDispatches) unsubDispatches();
+    if (unsubSupplies) unsubSupplies();
+    
+    const baseRef = db.collection('agseed_data').doc(ADMIN_EMAIL);
 
-function persist() {
-    try { 
-        localStorage.setItem(`agseed::${currentUser}`, JSON.stringify(records)); 
-        localStorage.setItem(`agseed::dispatch::${currentUser}`, JSON.stringify(dispatches)); 
-        localStorage.setItem(`agseed::supply::${currentUser}`, JSON.stringify(supplies)); 
-    } catch(e) {}
-    renderAll();
+    unsubRecords = baseRef.collection('records').onSnapshot(snap => {
+        records = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderAll();
+    }, error => console.error("Error (records):", error));
+
+    unsubDispatches = baseRef.collection('dispatches').onSnapshot(snap => {
+        dispatches = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderAll();
+    }, error => console.error("Error (dispatches):", error));
+
+    unsubSupplies = baseRef.collection('supplies').onSnapshot(snap => {
+        supplies = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderAll();
+    }, error => console.error("Error (supplies):", error));
 }
 
 function renderAll() {
@@ -526,9 +562,13 @@ function calcDose() {
     const useA   = inp.useApron.checked;
     const useI   = inp.useInoculante.checked;
 
-    const rateP = parseFloat(inp.ratePolimero.value)   || RATES_PER_TON.polimero;
-    const rateA = parseFloat(inp.rateApron.value)      || RATES_PER_TON.apron;
-    const rateI = parseFloat(inp.rateInoculante.value) || RATES_PER_TON.inoculante;
+    const parsedP = parseFloat(inp.ratePolimero.value);
+    const parsedA = parseFloat(inp.rateApron.value);
+    const parsedI = parseFloat(inp.rateInoculante.value);
+    
+    const rateP = isNaN(parsedP) ? RATES_PER_TON.polimero : parsedP;
+    const rateA = isNaN(parsedA) ? RATES_PER_TON.apron : parsedA;
+    const rateI = isNaN(parsedI) ? RATES_PER_TON.inoculante : parsedI;
 
     const rateP_u = rateP * 1.25;
     const rateA_u = rateA * 1.25;
@@ -577,19 +617,31 @@ window.deleteRecord = function(id) {
     Swal.fire({
         title: '¿Eliminar curado?', text: "Se recalcularán los stocks permanentemente.", icon: 'warning',
         showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
-    }).then((res) => { if (res.isConfirmed) { records = records.filter(r => r.id !== id); persist(); } });
+    }).then((res) => { 
+        if (res.isConfirmed) { 
+            db.collection('agseed_data').doc(ADMIN_EMAIL).collection('records').doc(id).delete(); 
+        } 
+    });
 };
 window.deleteDispatch = function(id) {
     Swal.fire({
         title: '¿Eliminar movimiento?', text: "La mercadería volverá al stock original.", icon: 'warning',
         showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
-    }).then((res) => { if (res.isConfirmed) { dispatches = dispatches.filter(d => d.id !== id); persist(); } });
+    }).then((res) => { 
+        if (res.isConfirmed) { 
+            db.collection('agseed_data').doc(ADMIN_EMAIL).collection('dispatches').doc(id).delete(); 
+        } 
+    });
 };
 window.deleteSupply = function(id) {
     Swal.fire({
         title: '¿Eliminar ingreso?', text: "Puede afectar tus cálculos de disponibilidad.", icon: 'warning',
         showCancelButton: true, confirmButtonColor: '#e74c3c', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
-    }).then((res) => { if (res.isConfirmed) { supplies = supplies.filter(s => s.id !== id); persist(); } });
+    }).then((res) => { 
+        if (res.isConfirmed) { 
+            db.collection('agseed_data').doc(ADMIN_EMAIL).collection('supplies').doc(id).delete(); 
+        } 
+    });
 };
 
 window.editRecord = function(id) {
@@ -615,12 +667,16 @@ function bindEvents() {
     document.getElementById('btn-export-xlsx').addEventListener('click', () => { exportModal.classList.add('active'); });
     document.getElementById('btn-whatsapp').addEventListener('click', () => { exportModal.classList.add('active'); });
 
-    loginForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const email = inp.email.value.trim();
-        if (email) signIn(email);
-        else document.getElementById('login-error').style.display = 'block';
-    });
+    // Modificamos el evento del botón de Google
+    const btnGoogle = document.getElementById('btn-login-google');
+    if(btnGoogle) {
+        btnGoogle.addEventListener('click', () => {
+            auth.signInWithPopup(provider).catch(error => {
+                document.getElementById('login-error').textContent = error.message;
+                document.getElementById('login-error').style.display = 'block';
+            });
+        });
+    }
 
     // Añadir Lote Modal Despacho
     btnAddLote.addEventListener('click', () => addDispatchItem());
@@ -649,15 +705,16 @@ function bindEvents() {
             contenidoPromedio: dose.contenidoPromedio, usePolimero: dose.usePolimero, useApron: dose.useApron, useInoculante: dose.useInoculante,
             polimero: dose.polimero, apron: dose.apron, inoculante: dose.inoculante, total: dose.total,
         };
-        if (editingId) {
-            const idx = records.findIndex(r => r.id === editingId);
-            if (idx !== -1) records[idx] = record;
+        db.collection('agseed_data').doc(ADMIN_EMAIL).collection('records').doc(record.id).set(record).then(() => {
+            if (!editingId) {
+                Swal.fire({title: 'Guardado', text: 'El curado se guardó correctamente.', icon: 'success', timer: 1500, showConfirmButton: false});
+            }
             editingId = null;
-        } else { 
-            records.push(record); 
-            Swal.fire({title: 'Guardado', text: 'El curado se guardó correctamente.', icon: 'success', timer: 1500, showConfirmButton: false});
-        }
-        persist(); closeModals();
+            closeModals();
+        }).catch(err => {
+            console.error(err);
+            Swal.fire('Error', 'No se pudo guardar.', 'error');
+        });
     });
 
     dispatchForm.addEventListener('submit', e => {
@@ -701,9 +758,10 @@ function bindEvents() {
             items: customItems,
             kilos: parseFloat(dispatchKilosGlobal.value.replace(' Kg', '')) || 0
         };
-        dispatches.push(d);
-        Swal.fire({title: 'Éxito', text: `El ${tipoMovimiento.toLowerCase()} se registró perfectamente.`, icon: 'success', timer: 1800, showConfirmButton: false});
-        persist(); closeModals();
+        db.collection('agseed_data').doc(ADMIN_EMAIL).collection('dispatches').doc(d.id).set(d).then(() => {
+            Swal.fire({title: 'Éxito', text: `El ${tipoMovimiento.toLowerCase()} se registró perfectamente.`, icon: 'success', timer: 1800, showConfirmButton: false});
+            closeModals();
+        }).catch(err => Swal.fire('Error', 'No se pudo guardar.', 'error'));
     });
 
     supplyForm.addEventListener('submit', e => {
@@ -712,9 +770,10 @@ function bindEvents() {
             id: Date.now().toString(), fecha: document.getElementById('supply-fecha').value,
             insumo: document.getElementById('supply-insumo').value, cantidad: parseFloat(document.getElementById('supply-cantidad').value), remito: document.getElementById('supply-remito').value
         };
-        supplies.push(s);
-        Swal.fire({title: 'Ingresado', text: 'Stock de insumo actualizado.', icon: 'success', timer: 1500, showConfirmButton: false});
-        persist(); closeModals();
+        db.collection('agseed_data').doc(ADMIN_EMAIL).collection('supplies').doc(s.id).set(s).then(() => {
+            Swal.fire({title: 'Ingresado', text: 'Stock de insumo actualizado.', icon: 'success', timer: 1500, showConfirmButton: false});
+            closeModals();
+        }).catch(err => Swal.fire('Error', 'No se pudo guardar.', 'error'));
     });
 
     // Iniciar con la vista por detecto al bindear
