@@ -3,7 +3,7 @@
 //  Permite instalación y uso offline
 // ═══════════════════════════════════════════════
 
-const CACHE_NAME = 'manisur-curado-v8';
+const CACHE_NAME = 'manisur-curado-v9';
 const ASSETS = [
     '/',
     '/index.html',
@@ -37,38 +37,17 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// Fetch: Network First para HTML, Cache First para el resto
+// Fetch: Network First para todo (para evitar problemas de caché durante desarrollo)
 self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
-
-    // Solo interceptar requests del mismo origen o fonts/cdn
     if (event.request.method !== 'GET') return;
 
-    // Estrategia Network-First para HTML (siempre contenido fresco)
-    if (event.request.headers.get('accept')?.includes('text/html')) {
-        event.respondWith(
-            fetch(event.request)
-                .then(res => {
-                    const clone = res.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                    return res;
-                })
-                .catch(() => caches.match('/index.html'))
-        );
-        return;
-    }
-
-    // Cache-First para todo lo demás (CSS, JS, fuentes)
     event.respondWith(
-        caches.match(event.request).then(cached => {
-            if (cached) return cached;
-            return fetch(event.request).then(res => {
-                if (res && res.status === 200) {
-                    const clone = res.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                }
+        fetch(event.request)
+            .then(res => {
+                const clone = res.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
                 return res;
-            }).catch(() => cached);
-        })
+            })
+            .catch(() => caches.match(event.request))
     );
 });
