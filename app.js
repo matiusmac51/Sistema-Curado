@@ -2,6 +2,22 @@
 //  AgroSeed — Sistema Logística de Curado
 // ═══════════════════════════════════════════════════
 
+// ── Firebase Config ──
+const firebaseConfig = {
+    apiKey: "AIzaSyDEeBuDbGMKiVytaDwKHyBRunNMmcpOxFg",
+    authDomain: "logistica-de-curado-99023.firebaseapp.com",
+    projectId: "logistica-de-curado-99023",
+    storageBucket: "logistica-de-curado-99023.firebasestorage.app",
+    messagingSenderId: "13953394615",
+    appId: "1:13953394615:web:dfe83b4a24b6bf979d2a32"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+const provider = new firebase.auth.GoogleAuthProvider();
+const ADMIN_EMAIL = 'matius.cjs@gmail.com';
+let unsubSnapshot = null;
+
 const RATES_PER_TON  = { polimero: 6.3,   apron: 1.0,   inoculante: 3.0 };
 const RATES_PER_UNIT = { polimero: 7.875, apron: 1.250, inoculante: 3.750 };
 const KG_PER_UNIT    = 1250;
@@ -42,7 +58,6 @@ const supplyForm = document.getElementById('supply-form');
 const exportModal = document.getElementById('export-modal');
 
 const inp = {
-    email:          document.getElementById('email'),
     fecha:          document.getElementById('fecha'),
     horaInicio:     document.getElementById('hora-inicio'),
     horaFin:        document.getElementById('hora-fin'),
@@ -73,10 +88,13 @@ const out = {
 //  INIT
 // ════════════════════════════════════════════
 function init() {
-    try {
-        const saved = sessionStorage.getItem('ag_user');
-        if (saved) signIn(saved, false);
-    } catch(e) {}
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            signIn(user.email);
+        } else {
+            showView('login');
+        }
+    });
     bindEvents();
 }
 
@@ -107,37 +125,48 @@ function switchTab(tabId) {
     }
 }
 
-function signIn(email, persist = true) {
+function signIn(email) {
     currentUser = email.trim().toLowerCase();
     out.userBadge.textContent = currentUser;
-    if (persist) try { sessionStorage.setItem('ag_user', currentUser); } catch(e) {}
     loadData();
     showView('dashboard');
 }
 
 function signOut() {
     currentUser = null; records = []; dispatches = []; supplies = [];
-    try { sessionStorage.removeItem('ag_user'); } catch(e) {}
-    loginForm.reset();
-    document.getElementById('login-error').style.display = 'none';
-    showView('login');
+    if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
+    auth.signOut().then(() => showView('login'));
 }
 
 function loadData() {
-    try { records = JSON.parse(localStorage.getItem(`agseed::${currentUser}`)) || []; } catch(e) { records = []; }
-    try { dispatches = JSON.parse(localStorage.getItem(`agseed::dispatch::${currentUser}`)) || []; } catch(e) { dispatches = []; }
-    try { supplies = JSON.parse(localStorage.getItem(`agseed::supply::${currentUser}`)) || []; } catch(e) { supplies = []; }
-    renderAll();
+    if (unsubSnapshot) unsubSnapshot();
+    unsubSnapshot = db.collection('agseed_data').doc(ADMIN_EMAIL).onSnapshot(snap => {
+        if (snap.exists) {
+            const d = snap.data();
+            records   = d.records   ? JSON.parse(d.records)   : [];
+            dispatches= d.dispatches? JSON.parse(d.dispatches): [];
+            supplies  = d.supplies  ? JSON.parse(d.supplies)  : [];
+        } else {
+            records = []; dispatches = []; supplies = [];
+        }
+        renderAll();
+    }, err => console.error('Firestore error:', err));
 }
 
 function persist() {
-    try { 
-        localStorage.setItem(`agseed::${currentUser}`, JSON.stringify(records)); 
-        localStorage.setItem(`agseed::dispatch::${currentUser}`, JSON.stringify(dispatches)); 
-        localStorage.setItem(`agseed::supply::${currentUser}`, JSON.stringify(supplies)); 
-    } catch(e) {}
-    renderAll();
+    db.collection('agseed_data').doc(ADMIN_EMAIL).set({
+        records:    JSON.stringify(records),
+        dispatches: JSON.stringify(dispatches),
+        supplies:   JSON.stringify(supplies),
+        lastUpdateBy: currentUser,
+        lastUpdateTime: new Date().toISOString()
+    }).catch(e => {
+        console.error('Error saving:', e);
+        Swal.fire('Error de Conexión', 'No se pudieron guardar los datos en la nube.', 'error');
+    });
 }
+
+
 
 function renderAll() {
     buildLotesStats(); 
@@ -619,12 +648,17 @@ function bindEvents() {
     document.getElementById('btn-export-xlsx').addEventListener('click', () => { exportModal.classList.add('active'); });
     document.getElementById('btn-whatsapp').addEventListener('click', () => { exportModal.classList.add('active'); });
 
-    loginForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const email = inp.email.value.trim();
-        if (email) signIn(email);
-        else document.getElementById('login-error').style.display = 'block';
-    });
+    // Google Sign-In
+    const btnGoogle = document.getElementById('btn-login-google');
+    if (btnGoogle) {
+        btnGoogle.addEventListener('click', () => {
+            auth.signInWithPopup(provider).catch(error => {
+                const errDiv = document.getElementById('login-error');
+                errDiv.textContent = error.message;
+                errDiv.style.display = 'block';
+            });
+        });
+    }
 
     // Añadir Lote Modal Despacho
     btnAddLote.addEventListener('click', () => addDispatchItem());
